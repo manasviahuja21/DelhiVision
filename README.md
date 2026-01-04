@@ -2,8 +2,9 @@
 
 **Ward-Wise Environmental Action Dashboard for Delhi**
 
-DelhiVision is an integrated environmental intelligence platform that brings Air, Water and Land pollution data together — in one seamless dashboard, mapped ward-wise across Delhi. 
+**DelhiVision** is an integrated environmental intelligence platform that brings Air, Water and Land pollution data together — in one seamless dashboard, mapped ward-wise across Delhi. 
 While existing systems focus primarily on air quality (AQI), DelhiVision expands the conversation by bringing water and land pollution into equal focus and linking data to actionable insights.
+
 _✨ Designed for both citizens and government authorities to enable targeted, local environmental action._
 
 **Key features:**
