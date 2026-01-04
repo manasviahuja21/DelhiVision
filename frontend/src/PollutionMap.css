@@ -1,0 +1,4 @@
+.river-glow {
+    filter: drop-shadow(0 0 4px rgba(0, 230, 118, 0.4));
+    transition: all 0.3s ease; /* Smooth hover effects if you add them later */
+}
