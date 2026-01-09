@@ -2,19 +2,20 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, GeoJSON, ZoomControl, useMap } from 'react-leaflet'; 
 import 'leaflet/dist/leaflet.css';
 import Popup from './Popup';
+import DelhiDashboard from './DelhiDashboard';
+import Loader from "./Loader";
+
 // --- CSS ---
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
   body { margin: 0; background: #f4f6f8; overflow: hidden; font-family: 'Manrope', sans-serif; }
 
-  /* TEXTURE & PREVIOUS STYLES */
   .texture-overlay {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10;
     background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
   }
   .air-cloud { filter: blur(25px); mix-blend-mode: normal; pointer-events: none; transition: all 0.5s ease; }
   
-  /* CUSTOM SLIDER STYLING */
   .sim-range {
     -webkit-appearance: none; width: 100%; height: 4px; background: #cbd5e0; border-radius: 2px; outline: none; margin-top: 8px;
   }
@@ -24,7 +25,6 @@ const styles = `
   }
   .sim-range::-webkit-slider-thumb:hover { transform: scale(1.2); background: #2d3748; }
 
-  /* TOOLTIPS & LEGEND */
   .modern-tooltip {
     background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); border: none; border-left: 4px solid #006064; 
     color: #374151; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; padding: 12px 16px;
@@ -33,20 +33,33 @@ const styles = `
   .grad-soil { background: linear-gradient(to right, #d87a2c, #9c3c19, #3E2723); }
   .grad-air { background: linear-gradient(to right, #b3e5fc, #fbc02d, #5d4037); }
   .grad-water { background: linear-gradient(to right, #29b6f6, #20B2AA, #d84315); }
+
+  /* Darken & desaturate base map */
+  .leaflet-tile {
+    filter: brightness(0.85) contrast(1.05) saturate(0.85);
+  }
+
+  /* Cinematic vignette over map */
+  .map-grade {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 300;
+    background: radial-gradient(
+      circle at center,
+      rgba(0,0,0,0.05),
+      rgba(0,0,0,0.25)
+    );
+  }
 `;
 
 const DELHI_BOUNDS = [[28.20, 76.60], [29.10, 77.80]];
 
-// 1. BASELINE DATA GENERATION
 const baselineCache = {};
-baselineCache['#']={
-    "air": 0,
-    "water": 0,
-    "soil": 0
-  };
-const GENERATE_BASELINE_DATA = async (id) => {
-  if (baselineCache[id]) return baselineCache[id]; // cached copy
+baselineCache['#'] = { "air": 0, "water": 0, "soil": 0 };
 
+const GENERATE_BASELINE_DATA = async (id) => {
+  if (baselineCache[id]) return baselineCache[id];
   try {
     const res = await fetch(`http://localhost:5005/api/ward/${encodeURIComponent(id)}`);
     const data = await res.json();
@@ -54,18 +67,13 @@ const GENERATE_BASELINE_DATA = async (id) => {
     return data.baseStats;
   } catch (e) {
     console.error(`Failed to fetch stats for ${id}`, e);
-    return { air: 0, water: 0, soil: 0 }; // fallback
+    return { air: 0, water: 0, soil: 0 };
   }
 };
 
-
-
-
-// 2. CAUSES CONFIGURATION
-// This defines your sliders and how much "weight" they have on the final calculation
 const POLLUTION_CAUSES = {
   air: [
-    { id: 'stubble', label: 'Stubble Burning', weight: 0.5 }, // High impact
+    { id: 'stubble', label: 'Stubble Burning', weight: 0.5 },
     { id: 'vehicle', label: 'Vehicular Emissions', weight: 0.3 },
     { id: 'dust', label: 'Construction Dust', weight: 0.2 }
   ],
@@ -92,8 +100,6 @@ const MapLayerManager = () => {
 
 const PollutionMap = () => {
   const [visibleLayers, setVisibleLayers] = useState({ air: true, water: true, soil: true });
-  
-  // New State: Store values for EVERY specific cause independently
   const [causeValues, setCauseValues] = useState({
     stubble: 1.0, vehicle: 1.0, dust: 1.0,
     industrial: 1.0, sewage: 1.0,
@@ -103,57 +109,47 @@ const PollutionMap = () => {
   const [mapData, setMapData] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
 
-  // --- AGGREGATION LOGIC ---
-  // Calculates the total multiplier for a category (e.g. Air) based on its specific causes
   const getAggregateFactor = (category) => {
     const causes = POLLUTION_CAUSES[category];
     let weightedSum = 0;
     let totalWeight = 0;
-
     causes.forEach(cause => {
       weightedSum += (causeValues[cause.id] * cause.weight);
       totalWeight += cause.weight;
     });
-
-    return weightedSum / totalWeight; // Returns a weighted average factor
+    return weightedSum / totalWeight;
   };
 
-  // Get current factors (Computed dynamically)
   const currentFactors = {
     air: getAggregateFactor('air'),
     water: getAggregateFactor('water'),
     soil: getAggregateFactor('soil')
   };
 
- useEffect(() => {
-  const fetchMapData = async () => {
-    const res = await fetch('/delhi_combined2.geojson');
-    const data = await res.json();
-
-    const enrichedFeatures = await Promise.all(
-      data.features.map(async (f) => {
-        const props = f.properties;
-        const id = props.Ward_Name || props.name || '#';
-        const baseStats = await GENERATE_BASELINE_DATA(id);
-
-        return {
-          ...f,
-          properties: {
-            ...props,
-            id,
-            baseStats,
-            type: props.isRiver || props.natural === 'water' ? 'water' : 'land'
-          }
-        };
-      })
-    );
-
-    setMapData({ ...data, features: enrichedFeatures });
-  };
-
-  fetchMapData();
-}, []);
-
+  useEffect(() => {
+    const fetchMapData = async () => {
+      const res = await fetch('/delhi_combined2.geojson');
+      const data = await res.json();
+      const enrichedFeatures = await Promise.all(
+        data.features.map(async (f) => {
+          const props = f.properties;
+          const id = props.Ward_Name || props.name || '#';
+          const baseStats = await GENERATE_BASELINE_DATA(id);
+          return {
+            ...f,
+            properties: {
+              ...props,
+              id,
+              baseStats,
+              type: props.isRiver || props.natural === 'water' ? 'water' : 'land'
+            }
+          };
+        })
+      );
+      setMapData({ ...data, features: enrichedFeatures });
+    };
+    fetchMapData();
+  }, []);
 
   const toggleLayer = (layerKey) => {
     setVisibleLayers(prev => ({ ...prev, [layerKey]: !prev[layerKey] }));
@@ -163,14 +159,13 @@ const PollutionMap = () => {
     setCauseValues(prev => ({ ...prev, [id]: parseFloat(value) }));
   };
 
-  // --- DYNAMIC STYLING ---
   const getSimulatedValue = (base, factor) => Math.floor(base * factor);
 
   const getSoilFillStyle = (feature) => {
     if (feature.properties.type === 'water') return { weight: 0, opacity: 0, fillOpacity: 0 };
     const val = getSimulatedValue(feature.properties.baseStats.soil, currentFactors.soil);
     let color = '#d87a2c'; 
-    if (val > 280) color = '#3E2723';      
+    if (val > 280) color = '#3E2723';           
     else if (val > 200) color = '#9c3c19'; 
     else if (val > 120) color = '#5D4037'; 
     return { fillColor: color, fillOpacity: 0.6, weight: 0, opacity: 0 };
@@ -207,12 +202,9 @@ const PollutionMap = () => {
   const onEachFeature = (feature, layer) => {
     if (feature.properties.id === '#') return;
     const isWater = feature.properties.type === 'water';
-    
-    // Calculate current values for Tooltip
     const currentSoil = getSimulatedValue(feature.properties.baseStats.soil, currentFactors.soil);
     const currentAir = getSimulatedValue(feature.properties.baseStats.air, currentFactors.air);
     const currentWater = getSimulatedValue(feature.properties.baseStats.water, currentFactors.water);
-
     const title = isWater ? 'HYDROLOGY' : 'WARD SECTOR';
     
     const tooltipHTML = `
@@ -234,21 +226,15 @@ const PollutionMap = () => {
     layer.bindTooltip(tooltipHTML, { sticky: true, className: 'modern-tooltip', direction: 'top', opacity: 1 });
     layer.on({ 
       click: () => {
-  if (isWater) return;
-
-  setSelectedWard({
-    id: feature.properties.id,
-    name: feature.properties.id,
-    baseStats: feature.properties.baseStats,
-    stats: {
-      air: currentAir,
-      soil: currentSoil,
-      water: currentWater
-    },
-    feature: feature   // ✅ FULL GEOJSON FEATURE
-  });
-}
-
+        if (isWater) return;
+        setSelectedWard({
+          id: feature.properties.id,
+          name: feature.properties.id,
+          baseStats: feature.properties.baseStats,
+          stats: { air: currentAir, soil: currentSoil, water: currentWater },
+          feature: feature
+        });
+      }
     });
   };
 
@@ -259,9 +245,9 @@ const PollutionMap = () => {
 
       <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: '#f4f6f8' }}>
         <MapContainer 
-        scrollWheelZoom={false}   // Disables "two finger scroll" or mouse wheel zoom
-  doubleClickZoom={false}   // Disables "double click to zoom"
-  touchZoom={false}
+          scrollWheelZoom={false} 
+          doubleClickZoom={false} 
+          touchZoom={false}
           center={[28.65, 77.15]} zoom={10} zoomControl={false} minZoom={10} maxBounds={DELHI_BOUNDS} 
           style={{ height: "100%", width: "100%", background: '#f4f6f8' }}
         >
@@ -285,16 +271,32 @@ const PollutionMap = () => {
             </>
           )}
         </MapContainer>
+        <div className="map-grade"></div>
       </div>
+
+      {/* Floating Dashboard */}
+      <DelhiDashboard
+        causeValues={causeValues}
+        updateCause={updateCause}
+        pollutionCauses={POLLUTION_CAUSES}
+      />
 
       {/* HEADER */}
       <div style={{ 
         position: 'fixed', top: 30, left: 30, zIndex: 500,
-        background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)',
+        background: 'rgba(245, 247, 250, 0.85)', backdropFilter: 'blur(16px)',
         padding: '24px 30px', borderRadius: '16px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid rgba(255,255,255,0.6)'
+        boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.05)'
       }}>
-        <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: '#1a202c', letterSpacing: '-0.5px' }}>
+        <h1 style={{
+        margin: 0,
+        fontSize: '28px',
+        fontWeight: '900',
+        background: 'linear-gradient(90deg, #111827, #374151)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        letterSpacing: '-0.8px'
+      }}>
           DELHI VISION
         </h1>
         <div style={{ fontSize: '11px', color: '#718096', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: '700' }}>
@@ -302,65 +304,12 @@ const PollutionMap = () => {
         </div>
       </div>
 
-      {/* NEW: EXPANDED SIMULATION SIDEBAR */}
-      <div style={{ 
-        position: 'fixed', top: 30, right: 30, zIndex: 500, width: '280px', maxHeight: '80vh', overflowY: 'auto',
-        background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)',
-        padding: '24px', borderRadius: '16px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid rgba(255,255,255,0.6)'
-      }}>
-        <div style={{ fontSize: '12px', fontWeight: '800', color: '#2d3748', marginBottom: '20px', textTransform:'uppercase', letterSpacing:'1px', borderBottom:'1px solid #edf2f7', paddingBottom:'10px' }}>
-           ⚡ Causative Agents
-        </div>
-
-        {/* Dynamic Sliders Grouped by Category */}
-        {Object.entries(POLLUTION_CAUSES).map(([category, causes]) => {
-            if (!visibleLayers[category]) return null;
-
-            return (
-                <div key={category} style={{ marginBottom: '24px' }}>
-                    <div style={{ 
-                        fontSize:'10px', fontWeight:'700', textTransform:'uppercase', color:'#a0aec0', marginBottom:'12px', letterSpacing:'0.5px',
-                        display: 'flex', alignItems: 'center', gap: '6px'
-                    }}>
-                        <span style={{width:'6px', height:'6px', borderRadius:'50%', background: category==='air'?'#f6ad55': category==='water'?'#4299e1':'#ed8936'}}></span>
-                        {category} Factors
-                    </div>
-                    
-                    {causes.map(cause => (
-                        <div key={cause.id} style={{ marginBottom: '16px' }}>
-                            <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', fontWeight:'600', color:'#4a5568' }}>
-                                <span>{cause.label}</span>
-                                <span style={{color: causeValues[cause.id] > 1.5 ? '#e53e3e' : '#38a169', fontFamily:'monospace'}}>
-                                    {(causeValues[cause.id]).toFixed(1)}x
-                                </span>
-                            </div>
-                            <input 
-                                type="range" min="0.5" max="3.0" step="0.1" 
-                                value={causeValues[cause.id]} 
-                                onChange={(e) => updateCause(cause.id, e.target.value)}
-                                className="sim-range"
-                            />
-                        </div>
-                    ))}
-                </div>
-            )
-        })}
-
-        {/* EMPTY STATE */}
-        {!visibleLayers.air && !visibleLayers.water && !visibleLayers.soil && (
-          <div style={{fontSize:'12px', color:'#a0aec0', fontStyle:'italic', textAlign:'center', padding:'20px 0'}}>
-            Enable a layer below to access its simulation controls.
-          </div>
-        )}
-      </div>
-
       {/* LEGEND */}
       <div style={{ 
         position: 'fixed', bottom: 100, left: 30, zIndex: 500,
         background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)',
         padding: '20px', borderRadius: '16px', width: '200px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid rgba(255,255,255,0.6)'
+        boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.05)'
       }}>
         <div style={{ fontSize: '12px', fontWeight: '700', color: '#4a5568', marginBottom: '15px', textTransform:'uppercase', letterSpacing:'1px' }}>Index Guide</div>
         <div style={{marginBottom: '12px'}}>
@@ -386,9 +335,9 @@ const PollutionMap = () => {
       {/* CONTROLS */}
       <div style={{ 
         position: 'fixed', bottom: 40, left: '50%', transform: 'translateX(-50%)', zIndex: 500,
-        background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(20px)', borderRadius: '16px',
+        background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(20px)', borderRadius: '16px',
         padding: '12px 20px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', 
-        display: 'flex', gap: '16px', border: '1px solid rgba(255,255,255,0.8)'
+        display: 'flex', gap: '16px', border: '1px solid rgba(0,0,0,0.05)'
       }}>
         {['air', 'water', 'soil'].map((layer) => (
           <button
@@ -409,15 +358,13 @@ const PollutionMap = () => {
         ))}
       </div>
       
-      {/* WARD DETAIL SIDEBAR (Adjusted Position) */}
       {selectedWard && (
-  <Popup
-    wardProps={selectedWard}
-    factors={currentFactors}
-    onClose={() => setSelectedWard(null)}
-  />
-)}
-
+        <Popup
+          wardProps={selectedWard}
+          factors={currentFactors}
+          onClose={() => setSelectedWard(null)}
+        />
+      )}
     </>
   );
 };

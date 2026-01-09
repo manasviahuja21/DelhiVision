@@ -1,9 +1,50 @@
-import React, { useState, useEffect } from 'react';
-import { Wind, Droplets, MapPin, X, ShieldAlert, Activity, Download, Zap, CheckCircle2, Circle, PieChart, Info } from 'lucide-react';
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import React, { useState, useEffect } from "react";
+import { X, CheckCircle2, MapPin, Activity } from "lucide-react";
+import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "./Popup.css";
+import Loader from "./Loader";
 
+/* ---------------- MOCK DATA ---------------- */
+const MOCK = {
+  baseStats: { air: 431, water: 120, soil: 90 },
+  causes: {
+    air: [
+      { source: "Vehicles", percent: 42 },
+      { source: "Construction", percent: 28 },
+      { source: "Industry", percent: 18 },
+      { source: "Waste Burning", percent: 12 }
+    ],
+    water: [
+      { source: "Sewage", percent: 50 },
+      { source: "Industrial Waste", percent: 30 },
+      { source: "Urban Runoff", percent: 20 }
+    ],
+    soil: [
+      { source: "Pesticides", percent: 40 },
+      { source: "Dumping", percent: 35 },
+      { source: "Industrial", percent: 25 }
+    ]
+  },
+  governmentActions: {
+    air: ["Dust control", "Vehicle restriction", "Industrial checks"],
+    water: ["Drain cleaning", "STP upgrades", "Effluent monitoring"],
+    soil: ["Waste segregation", "Hazard disposal", "Land remediation"]
+  },
+  citizenSafety: {
+    air: ["Wear N95 masks", "Avoid morning walks", "Use air purifiers"],
+    water: ["Boil water", "Use filters", "Avoid contaminated sources"],
+    soil: ["Use gloves", "Wash produce", "Avoid contaminated land"]
+  },
+  mitigationTips: {
+    air: ["Use public transport", "Report burning", "Plant trees"],
+    water: ["Don’t dump waste", "Conserve water", "Report leaks"],
+    soil: ["Recycle", "Avoid dumping", "Eco-friendly fertilizers"]
+  }
+};
+
+/* ---------------- RECENTER MAP ---------------- */
 const RecenterMap = ({ feature }) => {
   const map = useMap();
   useEffect(() => {
@@ -15,13 +56,67 @@ const RecenterMap = ({ feature }) => {
   return null;
 };
 
-const Popup = ({ wardProps, factors, onClose }) => {
+/* ---------------- DONUT CHART ---------------- */
+const Donut = ({ data }) => {
+  const [hovered, setHovered] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  let acc = 0;
+  const colors = ["#ef4444", "#3b82f6", "#f59e0b", "#10b981"];
+
+  const handleMouseMove = (e) => {
+    setTooltipPos({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
+  };
+
+  return (
+    <div className="flex justify-center items-center">
+      <svg viewBox="0 0 36 36" className="w-40 h-40 rotate-[-90deg]">
+        {data.map((d, i) => {
+          const dash = `${d.percent} ${100 - d.percent}`;
+          const offset = acc;
+          acc += d.percent;
+          const isHovered = hovered === i;
+
+          return (
+            <circle
+              key={i}
+              r="13"
+              cx="18"
+              cy="18"
+              fill="transparent"
+              stroke={colors[i % 4]}
+              strokeWidth={isHovered ? 10 : 8}
+              strokeDasharray={dash}
+              strokeDashoffset={-offset}
+              style={{
+                transition: "all 0.3s ease",
+                cursor: "pointer",
+                filter: isHovered ? "drop-shadow(0 0 8px rgba(0,0,0,0.4))" : "none",
+              }}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
+
+/* ---------------- CARD BORDER COLOR ---------------- */
+const getCardBorder = (tab) => {
+  if (tab === "air") return "border-red-300";
+  if (tab === "water") return "border-blue-300";
+  if (tab === "soil") return "border-amber-300";
+  return "border-slate-200";
+};
+
+/* ---------------- POPUP ---------------- */
+const Popup = ({ wardProps, onClose }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('air');
+  const [activeTab, setActiveTab] = useState("air");
 
   const wardId = wardProps?.id;
-  const currentFactors = factors || { air: 1, water: 1, soil: 1 };
 
   useEffect(() => {
     const fetchWardData = async () => {
@@ -30,190 +125,179 @@ const Popup = ({ wardProps, factors, onClose }) => {
         const response = await fetch(`http://localhost:5005/api/ward/${wardId}`);
         const result = await response.json();
         setData(result);
-      } catch (err) { 
-        console.error("Fetch failed", err); 
-      } finally { 
-        setLoading(false); 
+      } catch (err) {
+        console.error("Fetch failed", err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchWardData();
   }, [wardId]);
 
-  if (loading || !data) return (
-    <div className="fixed inset-0 z-[10000] bg-white/90 backdrop-blur-md flex items-center justify-center">
-      <div className="flex flex-col items-center gap-2 text-slate-500">
-        <Activity className="animate-spin" />
-        <span className="text-[10px] font-black uppercase tracking-widest italic">Syncing Data Streams...</span>
+  if (loading || !data)
+    return (
+      <div className="fixed inset-0 z-[10000] bg-white/90 backdrop-blur-md flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2 text-slate-500">
+          <Activity className="animate-spin" />
+          <span className="text-[10px] font-black uppercase tracking-widest italic">
+            Syncing Data Streams...
+          </span>
+        </div>
       </div>
-    </div>
-  );
+    );
 
-  const currentVal = Math.floor(data.baseStats[activeTab] * (currentFactors[activeTab] || 1));
-
-  const getHeatmapStyle = () => {
-    const colors = {
-      air: { stroke: '#ef4444', fill: '#fee2e2' },
-      water: { stroke: '#3b82f6', fill: '#dbeafe' },
-      soil: { stroke: '#f59e0b', fill: '#fef3c7' }
-    };
-    return {
-      color: colors[activeTab].stroke,
-      weight: 5,
-      fillColor: colors[activeTab].fill,
-      fillOpacity: 0.5,
-      dashArray: '10, 10'
-    };
-  };
+  const value = Math.floor(data.baseStats[activeTab] || 0);
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-900/30 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-[1500px] h-[90vh] bg-white rounded-[3rem] shadow-2xl overflow-hidden flex flex-col border border-white">
-        
+    <div className="fixed inset-0 popup-bg backdrop-blur flex items-center justify-center p-6 z-[10000]">
+      <div className="bg-white/90 w-full max-w-[1500px] h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col">
+
         {/* HEADER */}
-        <div className="relative z-20 flex justify-between items-center px-10 py-6 border-b border-slate-100 bg-white">
-          <div className="flex items-center gap-10">
-            <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">{data.name}</h2>
-              <div className="flex gap-4 mt-2">
-                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                   <MapPin size={12} className="text-cyan-500" /> {data.wardId} District
-                 </span>
-                 <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest italic">Live Intelligence</span>
-                 </div>
+        <div className="flex justify-between px-12 py-6 border-b">
+          <div>
+            <h2 className="text-3xl font-extrabold italic tracking-tight">{data.name}</h2>
+            <p className="text-slate-400 uppercase text-sm tracking-wide flex items-center gap-1">
+              <MapPin size={14} /> Ward {data.wardId}
+            </p>
+          </div>
+          <button onClick={onClose}><X size={24} className="text-slate-500 hover:text-slate-900 transition-all"/></button>
+        </div>
+
+        {/* TABS */}
+        <div className="flex gap-10 px-12 pt-6 border-b">
+          {["air", "water", "soil"].map((t) => (
+            <button
+              key={t}
+              onClick={() => setActiveTab(t)}
+              className={`pb-3 text-sm font-black uppercase tracking-widest transition ${
+                activeTab === t ? "border-b-4 border-black text-black" : "text-slate-400"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {/* BODY */}
+        <div className="flex-1 overflow-y-auto p-10 space-y-14">
+
+          {/* MAP + SLIDERS */}
+          <div className="grid grid-cols-[520px_1fr] gap-10">
+
+            {/* MAP */}
+            <div className={`p-6 rounded-3xl border ${getCardBorder(activeTab)} bg-white/50 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] hover:shadow-[0_30px_70px_rgba(0,0,0,0.25)] transition-all relative`}>
+              <div className="h-[320px] rounded-2xl overflow-hidden relative z-10">
+                <MapContainer center={[28.61, 77.2]} zoom={13} className="w-full h-full z-0">
+                  <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+                  <GeoJSON
+                    data={data.feature}
+                    style={{
+                      color: activeTab === "air" ? "#ef4444" : activeTab === "water" ? "#3b82f6" : "#f59e0b",
+                      weight: 4,
+                      fillColor: activeTab === "air" ? "#fee2e2" : activeTab === "water" ? "#dbeafe" : "#fef3c7",
+                      fillOpacity: 0.5,
+                      dashArray: "8,8",
+                      opacity: 0.9
+                    }}
+                  />
+                  <RecenterMap feature={data.feature} />
+                </MapContainer>
+              </div>
+
+              {/* Intensity Circle */}
+              <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 w-32 h-32 flex items-center justify-center z-50">
+                <div className={`${value > 300 ? "pulse-critical" : "pulse-safe"} absolute w-full h-full rounded-full`}></div>
+                <div className="relative w-32 h-32 rounded-full bg-white/90 border-8 border-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.25)] flex flex-col items-center justify-center">
+                  <div className={`text-4xl font-extrabold ${value > 300 ? "text-red-600" : "text-emerald-600"}`}>
+                    {value}
+                  </div>
+                  <div className="text-xs font-black uppercase tracking-widest">
+                    {value > 300 ? "Critical" : "Safe"}
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
-              {['air', 'water', 'soil'].map(t => (
-                <button key={t} onClick={() => setActiveTab(t)}
-                  className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
-                    activeTab === t ? 'bg-white text-slate-900 shadow-lg scale-105' : 'text-slate-400 hover:text-slate-600'
-                  }`}
-                > {t} </button>
-              ))}
-            </div>
-          </div>
-          <button onClick={onClose} className="p-3 hover:bg-slate-50 rounded-2xl transition-all text-slate-300 hover:text-slate-900 border border-transparent hover:border-slate-200">
-            <X size={28} />
-          </button>
-        </div>
-
-        <div className="flex-1 flex overflow-hidden bg-slate-50/20">
-          
-          {/* LEFT COLUMN: CAUSES */}
-          <div className="w-[340px] p-8 flex flex-col gap-8 border-r border-slate-100 bg-white shadow-sm z-10">
-             <div>
-                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                  <PieChart size={16} className="text-slate-900" /> Source Breakdown
-                </h3>
-                <div className="space-y-8">
-                  {(data.causes?.[activeTab] || [
-                    {label: "Industrial Exhaust", contribution: 0.45}, 
-                    {label: "Urban Logistics", contribution: 0.35},
-                    {label: "Residue Burning", contribution: 0.20}
-                  ]).map((cause, idx) => (
-                    <div key={idx}>
-                      <div className="flex justify-between text-[11px] font-bold text-slate-600 uppercase mb-2 tracking-tight">
-                        <span>{cause.label}</span>
-                        <span className="text-slate-900 font-black italic">{Math.round(cause.contribution * 100)}%</span>
+            {/* SLIDERS */}
+            <div className="flex flex-col gap-6">
+              {["air", "water", "soil"].map((t) => {
+                const v = data.baseStats[t] || 0;
+                return (
+                  <div key={t} className={`p-5 rounded-2xl border ${getCardBorder(t)} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
+                    <div className="flex flex-col">
+                      <div className="flex justify-between mb-2 text-sm uppercase tracking-wider text-slate-500 font-bold">
+                        <span>{t} quality</span>
+                        <span className={v > 300 ? "text-red-600" : "text-emerald-600"}>
+                          {v > 300 ? "Unsafe" : "Safe"}
+                        </span>
                       </div>
-                      <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-1000 ease-out shadow-sm ${
-                            activeTab === 'air' ? 'bg-red-500' : 
-                            activeTab === 'water' ? 'bg-blue-500' : 
-                            'bg-orange-500'
-                          }`} 
-                          style={{ width: `${cause.contribution * 100}%` }} 
+                      <div className="border-b border-slate-300 mb-2"></div>
+                      <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700
+                            ${t === "air"
+                              ? "bg-gradient-to-r from-red-500 via-pink-500 to-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)]"
+                              : t === "water"
+                              ? "bg-gradient-to-r from-cyan-400 to-blue-500 shadow-[0_0_20px_rgba(34,211,238,0.6)]"
+                              : "bg-gradient-to-r from-yellow-400 to-amber-500 shadow-[0_0_20px_rgba(251,191,36,0.6)]"
+                            }`}
+                          style={{ width: `${Math.min(v / 5, 100)}%` }}
                         />
                       </div>
                     </div>
-                  ))}
-                </div>
-             </div>
-             <div className="mt-auto p-5 bg-slate-50 rounded-[2rem] border border-slate-200">
-                <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                   <Info size={14} className="text-slate-900" /> Node Insight
-                </div>
-                <p className="text-[11px] leading-relaxed text-slate-600 font-medium italic">
-                  Telemetric spikes detected. Ward {data.name} is showing a 15% deviation from seasonal norms.
-                </p>
-             </div>
-          </div>
-
-          {/* CENTER COLUMN: MAP */}
-          <div className="flex-1 relative">
-            <MapContainer center={[28.61, 77.20]} zoom={13} minZoom={11} zoomControl={false} attributionControl={false} className="w-full h-full grayscale-[0.1]">
-              <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
-              <GeoJSON key={activeTab + currentVal} data={data.feature} style={getHeatmapStyle()} />
-              <RecenterMap feature={data.feature} />
-            </MapContainer>
-            
-            <div className="absolute top-8 left-8 z-[400] bg-white/95 p-8 rounded-[2.5rem] shadow-2xl border border-white backdrop-blur-sm min-w-[200px]">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{activeTab} Intensity</p>
-              <div className={`text-7xl font-black tracking-tighter leading-none ${currentVal > 300 ? 'text-red-600' : 'text-slate-900'}`}>{currentVal}</div>
-              <div className="mt-4">
-                 <span className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${currentVal > 300 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                   {currentVal > 300 ? 'Critical' : 'Standard'}
-                 </span>
-              </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* RIGHT COLUMN: ACTIONS & SAFETY */}
-          <div className="w-[450px] p-8 flex flex-col gap-6 border-l border-slate-100 bg-white overflow-y-auto">
-            
-            {/* GOVT ACTIONS */}
-            <div className="space-y-4">
-              <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 px-2">
-                <ShieldAlert size={16} className="text-slate-900" /> Policy Implementation
-              </h3>
-              <div className="grid gap-3">
-                {data.governmentActions[activeTab].map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-4 p-4 bg-slate-50/70 rounded-[1.5rem] border border-slate-100 transition-all hover:bg-white hover:shadow-sm">
-                    {item.implemented ? (
-                      <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
-                    ) : (
-                      <Circle size={20} className="text-slate-200 shrink-0" />
-                    )}
-                    <span className={`text-[11px] font-bold uppercase tracking-tight leading-snug ${item.implemented ? 'text-slate-900' : 'text-slate-400 italic'}`}>
-                      {item.action}
-                    </span>
+          {/* POLICY + PIE */}
+          <div className="grid grid-cols-2 gap-10">
+            <div className={`p-8 rounded-3xl border ${getCardBorder(activeTab)} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
+              <h3 className="font-extrabold uppercase mb-2 text-lg text-slate-900 tracking-wide">Mitigation & Policy</h3>
+              <div className="border-b border-slate-300 mb-4"></div>
+              {MOCK.governmentActions[activeTab].map((a, i) => (
+                <div key={i} className="flex gap-4 items-center bg-slate-50/60 p-4 rounded-xl mb-3 shadow-inner">
+                  <CheckCircle2 className="text-emerald-500" />
+                  <span className="font-semibold text-slate-800">{a}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className={`p-8 rounded-3xl text-center border ${getCardBorder(activeTab)} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
+              <h3 className="font-extrabold uppercase mb-2 text-lg text-slate-900 tracking-wide">Pollution Sources</h3>
+              <div className="border-b border-slate-300 mb-4"></div>
+              <Donut data={MOCK.causes[activeTab]} />
+              <div className="mt-6 space-y-2 text-sm">
+                {MOCK.causes[activeTab].map((c, i) => (
+                  <div key={i} className="flex justify-between font-medium text-slate-700">
+                    <span>{c.source}</span>
+                    <span className="font-bold">{c.percent}%</span>
                   </div>
                 ))}
               </div>
             </div>
+          </div>
 
-            {/* CITIZEN SAFETY - FIXED SPACING */}
-            <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden group">
-              <Zap className="absolute -right-8 -top-8 w-36 h-36 text-white/5 rotate-12 transition-transform group-hover:scale-110 duration-700" />
-              <div className="relative z-10">
-                {/* Heading and List gap fixed (mb-4 instead of mb-8) */}
-                <div className="flex items-center gap-2 text-cyan-400 mb-4">
-                  <Activity size={18} />
-                  <span className="text-[11px] font-black uppercase tracking-[0.2em] italic">Citizen Safety</span>
-                </div>
-                <div className="space-y-4">
-                  {data.citizenSafety[activeTab].map((safety, idx) => (
-                    <div key={idx} className="flex gap-3 items-start">
-                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-2 shrink-0 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
-                      <p className="text-[12px] leading-relaxed font-semibold text-slate-200 tracking-tight">
-                        {safety}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          {/* CITIZENS */}
+          <div className="grid grid-cols-2 gap-10">
+            <div className={`p-8 rounded-3xl border ${getCardBorder(activeTab)} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
+              <h3 className="font-extrabold uppercase mb-2 text-slate-900 tracking-wide">Protect Yourself</h3>
+              <div className="border-b border-slate-300 mb-4"></div>
+              <ul className="list-disc ml-6 text-slate-700 font-medium">
+                {MOCK.citizenSafety[activeTab].map((s, i) => <li key={i}>{s}</li>)}
+              </ul>
             </div>
 
-            <button className="mt-auto w-full py-5 bg-slate-900 hover:bg-black text-white font-black uppercase text-[11px] tracking-[0.3em] rounded-2xl transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 group">
-              Export Analysis Report
-              <Download size={18} className="group-hover:translate-y-1 transition-transform" />
-            </button>
-
+            <div className={`p-8 rounded-3xl border ${getCardBorder(activeTab)} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
+              <h3 className="font-extrabold uppercase mb-2 text-slate-900 tracking-wide">Prevent & Mitigate</h3>
+              <div className="border-b border-slate-300 mb-4"></div>
+              <ul className="list-disc ml-6 text-slate-700 font-medium">
+                {MOCK.mitigationTips[activeTab].map((s, i) => <li key={i}>{s}</li>)}
+              </ul>
+            </div>
           </div>
+
         </div>
       </div>
     </div>

@@ -1,0 +1,132 @@
+/* ---------- PULSING INTENSITY ---------- */
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+  70% { box-shadow: 0 0 0 20px rgba(239,68,68,0); }
+  100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+}
+
+.pulse-critical {
+  animation: pulseGlow 2s infinite;
+  border-radius: 50%;
+}
+
+@keyframes pulseGlowSafe {
+  0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.3); }
+  70% { box-shadow: 0 0 0 15px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+
+.pulse-safe {
+  animation: pulseGlowSafe 2.5s infinite;
+  border-radius: 50%;
+}
+
+/* ---------- GLASS CARD ---------- */
+.card-glass {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+  transition: all 0.3s ease;
+}
+.card-glass:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.18);
+}
+
+/* ---------- SOFT 3D DEPTH ---------- */
+.soft-3d {
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+/* ---------- FLOATING MOTION ---------- */
+@keyframes floatSlow {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0px); }
+}
+
+.float {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+/* ---------- SOFT SHIMMER FOR MAP HUD ---------- */
+@keyframes shimmer {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* ---------- SOFT GRADIENT BACKGROUND ---------- */
+.popup-bg {
+  background: radial-gradient(circle at top left, #f8fafc, #eef2f7);
+}
+
+/* ---------- CARD HEADINGS ---------- */
+h3 {
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #1e293b; /* slate-900 */
+}
+
+/* ---------- HEADING SEPARATOR ---------- */
+.border-separator {
+  border-bottom: 1px solid rgba(203,213,225,0.5); /* slate-300/50% */
+  margin-bottom: 0.75rem;
+}
+
+/* ---------- DONUT TOOLTIP ---------- */
+.tooltip {
+  background-color: rgba(0,0,0,0.85);
+  color: white;
+  font-size: 0.625rem; /* text-xs */
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  pointer-events: none;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  white-space: nowrap;
+}
+
+/* ---------- PROGRESS BAR GLOW ---------- */
+.progress-air {
+  background: linear-gradient(to right, #ef4444, #f43f5e, #ef4444);
+  box-shadow: 0 0 20px rgba(239,68,68,0.6);
+}
+
+.progress-water {
+  background: linear-gradient(to right, #22d3ee, #3b82f6);
+  box-shadow: 0 0 20px rgba(34,211,238,0.6);
+}
+
+.progress-soil {
+  background: linear-gradient(to right, #fbbf24, #f59e0b);
+  box-shadow: 0 0 20px rgba(251,191,36,0.6);
+}
+
+/* ---------- SLIDERS ---------- */
+.slider-track {
+  background-color: #e2e8f0; /* slate-200 */
+  height: 0.375rem; /* 6px */
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.slider-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: all 0.7s ease;
+}
+
+/* ---------- CARD HOVER SHADOWS ---------- */
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 30px 70px rgba(0,0,0,0.25);
+  transition: all 0.3s ease;
+}

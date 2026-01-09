@@ -1,0 +1,322 @@
+/* Cyber for headings */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&display=swap');
+
+/* Clean for data */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+
+/* ================= CORE COLOR SYSTEM ================= */
+
+:root {
+  --weather: #facc15;
+  --air: #e85d5d;
+  --water: #38bdf8;
+  --soil: #fb923c;
+  --glow: rgba(232, 93, 93, 0.7);
+}
+
+.aqi-value {
+  text-shadow: 
+    0 0 15px rgba(232, 93, 93, 0.4),
+    0 0 40px rgba(232, 93, 93, 0.2);
+}
+
+.cyber-frame.glow-weather { --glow: var(--weather); }
+.cyber-frame.glow-air     { --glow: var(--air); }
+.cyber-frame.glow-water   { --glow: var(--water); }
+.cyber-frame.glow-soil    { --glow: var(--soil); }
+
+/* ================= MASTER FRAME ================= */
+
+.cyber-frame {
+  --glow: var(--weather);
+  position: fixed;
+  top: 30px;
+  right: 50px;
+  width: 300px;
+  height: 85vh; 
+  background: rgba(20, 24, 30, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--glow);
+  font-family: "Orbitron", monospace;
+  border-radius: 14px;
+  box-shadow: 0 0 40px color-mix(in srgb, var(--glow), transparent 70%);
+  overflow: hidden;
+  transition: .5s ease;
+}
+
+.cyber-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at top,
+    rgba(239, 68, 68, 0.08),
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.cyber-frame.minimized-frame {
+  height: auto; /* Or a fixed small height like 60px */
+  width: 200px; /* optional: shrink width too */
+}
+
+.cyber-frame h1,
+.cyber-frame h2,
+.cyber-frame h3,
+.cyber-frame .panel-title {
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 1.5px;
+}
+
+.cyber-frame,
+.cyber-frame .metric,
+.cyber-frame .sim-row,
+.cyber-frame .sim-val,
+.cyber-frame p,
+.cyber-frame span {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.cyber-body {
+  padding: 18px;
+  min-height: 240px;
+  max-height: none;
+  overflow: visible;
+}
+
+/* ================= TOP BAR ================= */
+
+.cyber-glitch-bar {
+  height: 3px;
+  background: var(--glow);
+  box-shadow: 0 0 12px var(--glow);
+}
+
+.cyber-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px;
+  background: rgba(255,255,255,.03);
+}
+
+.module-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--glow);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* ================= NAV ================= */
+
+.cyber-nav {
+  display: flex;
+  background: rgba(0,0,0,.4);
+}
+
+.nav-item {
+  flex: 1;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 9px;
+  letter-spacing: 1px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: .25s ease;
+}
+
+.nav-item.active {
+  color: var(--glow);
+  box-shadow: inset 0 -2px 0 var(--glow), 0 0 10px var(--glow);
+}
+
+/* ================= BODY ================= */
+
+.cyber-body {
+  padding: 18px;
+  min-height: 240px;
+}
+
+/* HERO */
+.hero-stat {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.hero-stat label {
+  font-size: 12px;
+  letter-spacing: 2px;
+  opacity: .6;
+}
+
+.huge-val {
+  font-size: 44px;
+  font-weight: 800;
+  text-shadow: 0 0 20px var(--glow);
+}
+
+.status-tag {
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+/* ================= DATA TILES ================= */
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.data-tile {
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--glow), transparent 60%);
+  background: rgba(0,0,0,.6);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--glow), transparent 65%);
+  border-radius: 6px;
+}
+
+.data-tile label {
+  display: block;
+  font-size: 7px;
+  letter-spacing: 1px;
+  opacity: .6;
+}
+
+.data-tile span {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--glow);
+}
+
+/* ================= FOOTER ================= */
+
+.cyber-footer {
+  padding: 10px 14px;
+  font-size: 8px;
+  opacity: .7;
+  background: rgba(0,0,0,.4);
+}
+
+.pulse-line {
+  height: 2px;
+  width: 40%;
+  background: var(--glow);
+  box-shadow: 0 0 10px var(--glow);
+  margin-bottom: 5px;
+  animation: pulse 2s infinite alternate;
+}
+
+@keyframes pulse {
+  from { width: 15%; }
+  to { width: 80%; }
+}
+
+/* ================= MINIMIZED CHIP ================= */
+
+.collapsed-chip {
+  font-size: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--glow);
+  box-shadow: 0 0 12px var(--glow);
+}
+
+/* ================= OPEN BUTTON ================= */
+
+.cyber-trigger {
+  position: fixed;
+  top: 30px;
+  right: 325px;
+  background: black;
+  color: var(--weather);
+  border: 1px solid var(--weather);
+  padding: 10px 18px;
+  font-size: 9px;
+  font-family: Orbitron;
+  cursor: pointer;
+}
+
+.sim-section {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sim-control {
+  width: 100%;
+}
+
+.sim-row {
+  display: flex;
+  justify-content: space-between;
+  opacity: 0.8;
+}
+
+.sim-range {
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    #29b6f6,
+    #fbc02d,
+    #ef5350
+  );
+  height: 6px;
+  border-radius: 2px;
+  appearance: none;
+  outline: none;
+}
+
+.sim-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 10px rgba(239, 83, 80, 0.8);
+  cursor: pointer;
+}
+
+.sim-divider {
+  margin: 16px 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--glow), transparent 40%),
+    transparent
+  );
+}
+
+.sim-title {
+  font-size: 11.5px;
+  letter-spacing: 2px;
+  font-weight: 800;
+  color: color-mix(in srgb, var(--glow), white 30%);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.sim-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--glow), white 25%);
+}
+
+.sim-val {
+  font-family: monospace;
+  color: var(--glow);
+}
