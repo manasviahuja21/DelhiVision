@@ -1,0 +1,207 @@
+{
+    "Alipur": {
+        "ph": 7.4,
+        "Nitrate": 0.3,
+        "TDS": 669
+    },
+    "Hauz Khas": {
+        "ph": 7.5,
+        "Nitrate": 0.48,
+        "TDS": 675
+    },
+    "Bawana": {
+        "ph": 7.1,
+        "Nitrate": 0.76,
+        "TDS": 461
+    },
+    "Burari": {
+        "ph": 7.4,
+        "Nitrate": 0.3,
+        "TDS": 346
+    },
+    "SADH NAGAR": {
+        "ph": 6.7,
+        "Nitrate": 0.47,
+        "TDS": 288
+    },
+    "Dilshad Garden": {
+        "ph": 7.2,
+        "Nitrate": 0.3,
+        "TDS": 559
+    },
+    "Uttam Nagar": {
+        "ph": 6.7,
+        "Nitrate": 0.3,
+        "TDS": 577
+    },
+    "Chhatarpur": {
+        "ph": 7.3,
+        "Nitrate": 0.76,
+        "TDS": 590
+    },
+    "Gharoli": {
+        "ph": 7.0,
+        "Nitrate": 0.4,
+        "TDS": 679
+    },
+    "Gandhi Nagar": {
+        "ph": 6.9,
+        "Nitrate": 0.3,
+        "TDS": 496
+    },
+    "SHALIMAR BAGH SOUTH": {
+        "ph": 7.0,
+        "Nitrate": 0.3,
+        "TDS": 383
+    },
+    "Kashmere Gate": {
+        "ph": 7.2,
+        "Nitrate": 0.86,
+        "TDS": 375
+    },
+    "Kalkaji": {
+        "ph": 6.9,
+        "Nitrate": 0.57,
+        "TDS": 441
+    },
+    "Kamla Nagar": {
+        "ph": 7.2,
+        "Nitrate": 0.5,
+        "TDS": 536
+    },
+    "Karol Bagh": {
+        "ph": 6.9,
+        "Nitrate": 0.3,
+        "TDS": 358
+    },
+    "Matiala": {
+        "ph": 6.9,
+        "Nitrate": 0.36,
+        "TDS": 807
+    },
+    "HARI NAGAR": {
+        "ph": 7.3,
+        "Nitrate": 0.5,
+        "TDS": 698
+    },
+    "MAYUR VIHAR PHASE-I": {
+        "ph": 7.3,
+        "Nitrate": 0.3,
+        "TDS": 480
+    },
+    "Najafgarh": {
+        "ph": 7.1,
+        "Nitrate": 0.98,
+        "TDS": 361
+    },
+    "Naraina": {
+        "ph": 6.9,
+        "Nitrate": 0.56,
+        "TDS": 450
+    },
+    "Okhla": {
+        "ph": 7.3,
+        "Nitrate": 1.01,
+        "TDS": 838
+    },
+    "Bhogal": {
+        "ph": 7.1,
+        "Nitrate": 0.4,
+        "TDS": 1308
+    },
+    "Paschim Vihar North": {
+        "ph": 7.1,
+        "Nitrate": 0.3,
+        "TDS": 1080
+    },
+    "East Patel Nagar": {
+        "ph": 7.0,
+        "Nitrate": 0.3,
+        "TDS": 394
+    },
+    "Patparganj": {
+        "ph": 7.4,
+        "Nitrate": 1.5,
+        "TDS": 1110
+    },
+    "Mangolpuri": {
+        "ph": 7.1,
+        "Nitrate": 0.3,
+        "TDS": 1970
+    },
+    "Pahar ganj": {
+        "ph": 7.7,
+        "Nitrate": 0.34,
+        "TDS": 312
+    },
+    "Kalyan puri": {
+        "ph": 7.0,
+        "Nitrate": 0.3,
+        "TDS": 485
+    },
+    "Narela": {
+        "ph": 7.4,
+        "Nitrate": 0.53,
+        "TDS": 896
+    },
+    "Rajender Nagar": {
+        "ph": 7.0,
+        "Nitrate": 1.03,
+        "TDS": "-"
+    },
+    "SHASTRI NAGAR": {
+        "ph": 7.2,
+        "Nitrate": 0.36,
+        "TDS": 397
+    },
+    "Rohini": {
+        "ph": 7.3,
+        "Nitrate": 1.5,
+        "TDS": 367
+    },
+    "MALVIYA NAGAR": {
+        "ph": 7.4,
+        "Nitrate": 0.3,
+        "TDS": 500
+    },
+    "Shahdara": {
+        "ph": 6.3,
+        "Nitrate": 0.68,
+        "TDS": 337
+    },
+    "SULTANPURI  SOUTH": {
+        "ph": 6.9,
+        "Nitrate": 0.49,
+        "TDS": 689
+    },
+    "Najafgarh": {
+        "ph": 7.1,
+        "Nitrate": 0.87,
+        "TDS": 2870
+    },
+    "Tilak Nagar": {
+        "ph": 7.2,
+        "Nitrate": 0.36,
+        "TDS": 642
+    },
+    "Trilok puri": {
+        "ph": 7.0,
+        "Nitrate": 0.3,
+        "TDS": 540
+    },
+    "VasantKunj": {
+        "ph": 7.7,
+        "Nitrate": 0.41,
+        "TDS": 311
+    },
+    "Vasant Vihar": {
+        "ph": 7.2,
+        "Nitrate": 0.3,
+        "TDS": 409
+    },
+    "JANAK PURI NORTH": {
+        "ph": 6.8,
+        "Nitrate": 0.3,
+        "TDS": 730
+    }
+}

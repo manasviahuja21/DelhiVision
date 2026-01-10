@@ -1,18 +1,28 @@
 import React, { useState } from "react";
 import "./DelhiDashboard.css";
 
-const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses }) => {
-    const getCausesForTab = () => pollutionCauses[activeTab] || [];
-    const [isOpen, setIsOpen] = useState(true);
-    const [activeTab, setActiveTab] = useState("weather");
-    const [isMinimized, setIsMinimized] = useState(false);
+const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses, delhiStats }) => {
+  const getCausesForTab = () => pollutionCauses[activeTab] || [];
+  const [isOpen, setIsOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState("weather");
+  const [isMinimized, setIsMinimized] = useState(false);
 
-  const data = {
-    weather: { temp: "24°C", humidity: "45%", wind: "12 km/h NW", precip: "10%", uv: "4 Low" },
-    air: { aqi: "154", status: "UNHEALTHY", pm25: "62 µg", pm10: "110 µg" },
-    water: { ph: "7.2", tds: "450 ppm", turbidity: "Low" },
-    soil: { moisture: "18%", nutrients: "Optimal", ph: "6.8" }
+  // Safe defaults if delhiStats hasn't loaded yet
+  const stats = delhiStats || { 
+      air: 0, water: 0, soil: 0,
+      avgPM25: 0, avgPM10: 0,
+      avgTDS: 0, avgNitrate: 0,
+      avgMoisture: 0
   };
+
+  const getStatus = (val, type) => {
+    if (type === 'air') return val > 300 ? "HAZARDOUS" : val > 200 ? "POOR" : "MODERATE";
+    if (type === 'water') return val > 150 ? "POLLUTED" : "ACCEPTABLE"; 
+    if (type === 'soil') return val < 50 ? "DEGRADED" : "FERTILE";
+    return "UNKNOWN";
+  };
+
+  const weatherData = { temp: "24°C", humidity: "45%", wind: "12 km/h NW", precip: "10%", uv: "4 Low" };
 
   if (!isOpen) {
     return (
@@ -35,7 +45,7 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses }) => {
 
       {isMinimized && (
         <div className={`collapsed-chip glow-${activeTab}`}>
-          DELHI • {data.weather.temp}
+          DELHI • {weatherData.temp}
         </div>
       )}
 
@@ -54,37 +64,39 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses }) => {
       <div className={`cyber-content ${isMinimized ? "minimized" : ""}`} style={{ display: isMinimized ? "none" : "block" }}>
         <main className="cyber-body">
 
+          {/* WEATHER TAB */}
           {activeTab === "weather" && (
             <>
               <div className="hero-stat">
                 <label>TEMPERATURE</label>
-                <div className="huge-val">{data.weather.temp}</div>
+                <div className="huge-val">{weatherData.temp}</div>
               </div>
               <div className="detail-grid">
-                <div className="data-tile tile-weather"><label>HUMIDITY</label><span>{data.weather.humidity}</span></div>
-                <div className="data-tile tile-weather"><label>WIND</label><span>{data.weather.wind}</span></div>
-                <div className="data-tile tile-weather"><label>PRECIP</label><span>{data.weather.precip}</span></div>
-                <div className="data-tile tile-weather"><label>UV</label><span>{data.weather.uv}</span></div>
+                <div className="data-tile tile-weather"><label>HUMIDITY</label><span>{weatherData.humidity}</span></div>
+                <div className="data-tile tile-weather"><label>WIND</label><span>{weatherData.wind}</span></div>
+                <div className="data-tile tile-weather"><label>PRECIP</label><span>{weatherData.precip}</span></div>
+                <div className="data-tile tile-weather"><label>UV</label><span>{weatherData.uv}</span></div>
               </div>
             </>
           )}
 
+          {/* AIR TAB */}
           {activeTab === "air" && (
             <>
               <div className="hero-stat aqi-color">
-                <label>AQI</label>
-                <div className="huge-val">{data.air.aqi}</div>
-                <div className="status-tag">{data.air.status}</div>
+                <label>AVG AQI (DELHI)</label>
+                <div className="huge-val">{stats.air}</div>
+                <div className="status-tag">{getStatus(stats.air, 'air')}</div>
               </div>
               <div className="detail-grid">
-                <div className="data-tile tile-air"><label>PM2.5</label><span>{data.air.pm25}</span></div>
-                <div className="data-tile tile-air"><label>PM10</label><span>{data.air.pm10}</span></div>
+                {/* 🔥 REAL DATA TILES */}
+                <div className="data-tile tile-air"><label>PM2.5 AVG</label><span>{stats.avgPM25} µg</span></div>
+                <div className="data-tile tile-air"><label>PM10 AVG</label><span>{stats.avgPM10} µg</span></div>
               </div>
               <div className="sim-divider" />
 
                 <div className="sim-section">
-                    <div className="sim-title">AIR FACTORS</div>
-
+                    <div className="sim-title">POLLUTANT IMPACT (SIM)</div>
                     {getCausesForTab().map(cause => (
                     <div key={cause.id} className="sim-control">
                         <div className="sim-row">
@@ -93,7 +105,6 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses }) => {
                             {causeValues[cause.id].toFixed(1)}x
                         </span>
                         </div>
-
                         <input
                         type="range"
                         min="0.5"
@@ -109,21 +120,23 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses }) => {
             </>
           )}
 
+          {/* WATER TAB */}
           {activeTab === "water" && (
             <>
               <div className="hero-stat water-color">
-                <label>PH</label>
-                <div className="huge-val">{data.water.ph}</div>
+                <label>AVG WQI (DELHI)</label>
+                <div className="huge-val">{stats.water}</div>
+                <div className="status-tag" style={{fontSize: '10px'}}>{getStatus(stats.water, 'water')}</div>
               </div>
               <div className="detail-grid">
-                <div className="data-tile tile-water"><label>TDS</label><span>{data.water.tds}</span></div>
-                <div className="data-tile tile-water"><label>TURBIDITY</label><span>{data.water.turbidity}</span></div>
+                {/* 🔥 REAL DATA TILES */}
+                <div className="data-tile tile-water"><label>TDS AVG</label><span>{stats.avgTDS}</span></div>
+                <div className="data-tile tile-water"><label>NITRATE</label><span>{stats.avgNitrate}</span></div>
               </div>
               <div className="sim-divider" />
 
                 <div className="sim-section">
-                    <div className="sim-title">WATER FACTORS</div>
-
+                    <div className="sim-title">CONTAMINANTS (SIM)</div>
                     {getCausesForTab().map(cause => (
                     <div key={cause.id} className="sim-control">
                         <div className="sim-row">
@@ -132,7 +145,6 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses }) => {
                             {causeValues[cause.id].toFixed(1)}x
                         </span>
                         </div>
-
                         <input
                         type="range"
                         min="0.5"
@@ -148,21 +160,23 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses }) => {
             </>
           )}
 
+          {/* LAND TAB */}
           {activeTab === "land" && (
             <>
               <div className="hero-stat land-color">
-                <label>MOISTURE</label>
-                <div className="huge-val">{data.soil.moisture}</div>
+                <label>AVG SQI (DELHI)</label>
+                <div className="huge-val">{stats.soil}</div>
+                <div className="status-tag" style={{fontSize: '10px'}}>{getStatus(stats.soil, 'soil')}</div>
               </div>
               <div className="detail-grid">
-                <div className="data-tile tile-land"><label>NUTRIENTS</label><span>{data.soil.nutrients}</span></div>
-                <div className="data-tile tile-land"><label>PH</label><span>{data.soil.ph}</span></div>
+                {/* 🔥 REAL DATA TILES */}
+                <div className="data-tile tile-land"><label>MOISTURE</label><span>{stats.avgMoisture}%</span></div>
+                <div className="data-tile tile-land"><label>SALINITY</label><span>{stats.avgTDS > 1000 ? "HIGH" : "MOD"}</span></div>
               </div>
               <div className="sim-divider" />
 
                 <div className="sim-section">
-                    <div className="sim-title">LAND FACTORS</div>
-
+                    <div className="sim-title">LAND FACTORS (SIM)</div>
                     {getCausesForTab().map(cause => (
                     <div key={cause.id} className="sim-control">
                         <div className="sim-row">
@@ -171,7 +185,6 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses }) => {
                             {causeValues[cause.id].toFixed(1)}x
                         </span>
                         </div>
-
                         <input
                         type="range"
                         min="0.5"
@@ -191,7 +204,7 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses }) => {
 
         <footer className="cyber-footer">
           <div className="pulse-line"></div>
-          <div>SIGNAL: STABLE</div>
+          <div>SIGNAL: STABLE • {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
         </footer>
       </div>
     </div>

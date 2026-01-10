@@ -1,48 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { X, CheckCircle2, MapPin, Activity } from "lucide-react";
+import { X, CheckCircle2, MapPin, Activity, Droplets, FlaskConical, ShieldAlert, BellRing, Send } from "lucide-react";
 import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./Popup.css";
-import Loader from "./Loader";
-
-/* ---------------- MOCK DATA ---------------- */
-const MOCK = {
-  baseStats: { air: 431, water: 120, soil: 90 },
-  causes: {
-    air: [
-      { source: "Vehicles", percent: 42 },
-      { source: "Construction", percent: 28 },
-      { source: "Industry", percent: 18 },
-      { source: "Waste Burning", percent: 12 }
-    ],
-    water: [
-      { source: "Sewage", percent: 50 },
-      { source: "Industrial Waste", percent: 30 },
-      { source: "Urban Runoff", percent: 20 }
-    ],
-    soil: [
-      { source: "Pesticides", percent: 40 },
-      { source: "Dumping", percent: 35 },
-      { source: "Industrial", percent: 25 }
-    ]
-  },
-  governmentActions: {
-    air: ["Dust control", "Vehicle restriction", "Industrial checks"],
-    water: ["Drain cleaning", "STP upgrades", "Effluent monitoring"],
-    soil: ["Waste segregation", "Hazard disposal", "Land remediation"]
-  },
-  citizenSafety: {
-    air: ["Wear N95 masks", "Avoid morning walks", "Use air purifiers"],
-    water: ["Boil water", "Use filters", "Avoid contaminated sources"],
-    soil: ["Use gloves", "Wash produce", "Avoid contaminated land"]
-  },
-  mitigationTips: {
-    air: ["Use public transport", "Report burning", "Plant trees"],
-    water: ["Don’t dump waste", "Conserve water", "Report leaks"],
-    soil: ["Recycle", "Avoid dumping", "Eco-friendly fertilizers"]
-  }
-};
 
 /* ---------------- RECENTER MAP ---------------- */
 const RecenterMap = ({ feature }) => {
@@ -59,120 +20,262 @@ const RecenterMap = ({ feature }) => {
 /* ---------------- DONUT CHART ---------------- */
 const Donut = ({ data }) => {
   const [hovered, setHovered] = useState(null);
-  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   let acc = 0;
-  const colors = ["#ef4444", "#3b82f6", "#f59e0b", "#10b981"];
+  const colors = ["#ef4444", "#3b82f6", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899"];
 
-  const handleMouseMove = (e) => {
-    setTooltipPos({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
-  };
+  if (!data || data.length === 0) {
+    return (
+        <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-slate-200 rounded-full w-40 mx-auto">
+            <span className="text-xs text-slate-400 font-bold">NO DATA</span>
+        </div>
+    );
+  }
+
+  const total = data.reduce((sum, d) => sum + (d.value || 0), 0);
+  const chartData = data.map(d => ({
+    ...d,
+    percent: total > 0 ? ((d.value / total) * 100) : 0
+  })).filter(d => d.percent > 0);
 
   return (
-    <div className="flex justify-center items-center">
-      <svg viewBox="0 0 36 36" className="w-40 h-40 rotate-[-90deg]">
-        {data.map((d, i) => {
-          const dash = `${d.percent} ${100 - d.percent}`;
-          const offset = acc;
-          acc += d.percent;
-          const isHovered = hovered === i;
-
-          return (
-            <circle
-              key={i}
-              r="13"
-              cx="18"
-              cy="18"
-              fill="transparent"
-              stroke={colors[i % 4]}
-              strokeWidth={isHovered ? 10 : 8}
-              strokeDasharray={dash}
-              strokeDashoffset={-offset}
-              style={{
-                transition: "all 0.3s ease",
-                cursor: "pointer",
-                filter: isHovered ? "drop-shadow(0 0 8px rgba(0,0,0,0.4))" : "none",
-              }}
-              onMouseEnter={() => setHovered(i)}
-              onMouseLeave={() => setHovered(null)}
-            />
-          );
-        })}
-      </svg>
+    <div className="flex justify-center items-center py-4">
+      <div className="relative w-40 h-40">
+        <svg viewBox="0 0 36 36" className="w-full h-full rotate-[-90deg]">
+          {chartData.map((d, i) => {
+            const dash = `${d.percent} ${100 - d.percent}`;
+            const offset = acc;
+            acc += d.percent;
+            const isHovered = hovered === i;
+            return (
+              <circle
+                key={i}
+                r="15.9"
+                cx="18"
+                cy="18"
+                fill="transparent"
+                stroke={colors[i % colors.length]}
+                strokeWidth={isHovered ? 5 : 4}
+                strokeDasharray={dash}
+                strokeDashoffset={-offset}
+                style={{ transition: "all 0.3s ease", cursor: "pointer" }}
+                onMouseEnter={() => setHovered(i)}
+                onMouseLeave={() => setHovered(null)}
+              >
+                <title>{d.pollutant}: {Math.round(d.value)}</title>
+              </circle>
+            );
+          })}
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+            <span className="text-2xl font-black text-slate-700">
+                {hovered !== null ? Math.round(chartData[hovered].percent) + "%" : "100%"}
+            </span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase">
+                {hovered !== null ? chartData[hovered].pollutant : "Composition"}
+            </span>
+        </div>
+      </div>
     </div>
   );
 };
 
-/* ---------------- CARD BORDER COLOR ---------------- */
+/* ---------------- BORDER HELPERS ---------------- */
 const getCardBorder = (tab) => {
   if (tab === "air") return "border-red-300";
   if (tab === "water") return "border-blue-300";
-  if (tab === "land") return "border-amber-300";
+  if (tab === "soil") return "border-amber-300";
   return "border-slate-200";
 };
 
-/* ---------------- POPUP ---------------- */
+/* ---------------- STATIC MITIGATION (Fallback Only) ---------------- */
+const STATIC_MITIGATION = {
+  air: ["Use public transport", "Stop waste burning", "Plant air-purifying plants"],
+  water: ["Fix leaking taps", "Do not dump oil in drains", "Harvest rainwater"],
+  soil: ["Segregate dry/wet waste", "Compost organic waste", "Avoid single-use plastics"]
+};
+
 const Popup = ({ wardProps, onClose }) => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("air");
+  
+  // SMS Alert States
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [smsStatus, setSmsStatus] = useState("idle");
 
-  const wardId = wardProps?.id;
+  const { name, id, stats, data, feature } = wardProps || {};
 
-  useEffect(() => {
-    const fetchWardData = async () => {
-      if (!wardId) return;
-      try {
-        const response = await fetch(`http://localhost:5005/api/ward/${wardId}`);
-        const result = await response.json();
-        setData(result);
-      } catch (err) {
-        console.error("Fetch failed", err);
-      } finally {
-        setLoading(false);
+  const getBackendKey = (tab) => tab === "land" ? "soil" : tab;
+  const backendKey = getBackendKey(activeTab);
+
+  if (!data) return null;
+
+  const mainValue = Math.floor(stats[backendKey] || 0);
+  let sourceContent;
+
+  // --- HANDLE SMS SUBMISSION ---
+  const handleSendSMS = async () => {
+    if (!phoneNumber || phoneNumber.length < 10) return;
+    
+    setSmsStatus("sending");
+    
+    try {
+      const response = await fetch(`http://localhost:5005/api/ward/${id}/sms`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            phone: phoneNumber, 
+            wardId: id 
+        })
+      });
+
+      if (response.ok) {
+        setSmsStatus("success");
+        setTimeout(() => setSmsStatus("idle"), 3000); 
+        setPhoneNumber(""); 
+      } else {
+        setSmsStatus("error");
       }
-    };
-    fetchWardData();
-  }, [wardId]);
+    } catch (error) {
+      console.error("SMS Failed:", error);
+      setSmsStatus("error");
+    }
+  };
 
-  if (loading || !data)
-    return (
-      <div className="fixed inset-0 z-[10000] bg-white/90 backdrop-blur-md flex items-center justify-center">
-        <div className="flex flex-col items-center gap-2 text-slate-500">
-          <Activity className="animate-spin" />
-          <span className="text-[10px] font-black uppercase tracking-widest italic">
-            Syncing Data Streams...
-          </span>
+  // --- CONTENT LOGIC ---
+  if (activeTab === "air") {
+    const rawData = data.airPollutants?.data || [];
+    const pollutants = rawData.map(item => ({
+      pollutant: item.pollutant_id || item.pollutant || "Unknown",
+      value: Number(item.avg || item.value || 0),
+      unit: item.unit || "µg/m³"
+    })).filter(p => p.value > 0);
+
+    sourceContent = (
+      <>
+        <Donut data={pollutants} />
+        
+        {/* List */}
+        <div className="mt-4 space-y-2 text-sm max-h-[120px] overflow-y-auto custom-scrollbar">
+          {pollutants.length > 0 ? pollutants.map((c, i) => (
+            <div key={i} className="flex justify-between font-medium text-slate-700 border-b border-slate-100 pb-1">
+              <span className="uppercase text-xs tracking-wider font-bold">{c.pollutant}</span>
+              <span className="font-bold">{c.value} <span className="text-[10px] text-slate-400">{c.unit}</span></span>
+            </div>
+          )) : <div className="text-center text-slate-400 text-xs py-4">Pollutant data unavailable</div>}
+        </div>
+
+        {/* 🚨 SMS ALERT SECTION (Updated Layout) 🚨 */}
+        <div className="mt-6 pt-4 border-t border-slate-200">
+            <div className="flex items-center gap-2 mb-3">
+                {/* Animation Removed */}
+                <BellRing size={16} className="text-red-500" /> 
+                <span className="text-xs font-black text-slate-700 tracking-widest uppercase">Emergency Alerts</span>
+            </div>
+            
+            {/* New Line Layout */}
+            <div className="flex flex-col gap-3">
+                <input 
+                    type="tel" 
+                    placeholder="+91 Phone Number" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all font-medium text-slate-700 placeholder:text-slate-400"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                />
+                <button 
+                    onClick={handleSendSMS}
+                    disabled={smsStatus === "sending" || smsStatus === "success"}
+                    className={`w-full px-4 py-3 rounded-xl font-bold text-xs tracking-wider text-white transition-all shadow-md flex items-center justify-center gap-2
+                        ${smsStatus === 'success' ? 'bg-emerald-500 hover:bg-emerald-600' : 
+                          smsStatus === 'error' ? 'bg-slate-700' : 'bg-red-500 hover:bg-red-600 active:scale-95'}
+                    `}
+                >
+                    {smsStatus === "sending" ? (
+                        <>SENDING... <Activity size={14} className="animate-spin" /></>
+                    ) : smsStatus === "success" ? (
+                        <>SUBSCRIBED <CheckCircle2 size={14} /></>
+                    ) : (
+                        <>GET SMS ALERTS <Send size={12} /></>
+                    )}
+                </button>
+            </div>
+
+            {smsStatus === "success" && <p className="text-[10px] text-center text-emerald-600 mt-2 font-bold">✓ Alerts sent for Ward {id}</p>}
+            {smsStatus === "error" && <p className="text-[10px] text-center text-red-500 mt-2 font-bold">✗ Failed to alert. Try again.</p>}
+        </div>
+      </>
+    );
+  } else if (activeTab === "water") {
+    const { Nitrate, ph, TDS } = data.waterData || {};
+    sourceContent = (
+      <div className="grid grid-cols-1 gap-4 mt-4">
+        <div className="bg-blue-50 p-4 rounded-xl flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <FlaskConical className="text-blue-500" size={20}/>
+            <span className="font-bold text-slate-700">Nitrate</span>
+          </div>
+          <span className="font-black text-xl text-blue-600">{Nitrate ?? "N/A"}</span>
+        </div>
+        <div className="bg-cyan-50 p-4 rounded-xl flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Activity className="text-cyan-500" size={20}/>
+            <span className="font-bold text-slate-700">pH Level</span>
+          </div>
+          <span className="font-black text-xl text-cyan-600">{ph ?? "N/A"}</span>
+        </div>
+        <div className="bg-indigo-50 p-4 rounded-xl flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Droplets className="text-indigo-500" size={20}/>
+            <span className="font-bold text-slate-700">TDS</span>
+          </div>
+          <span className="font-black text-xl text-indigo-600">{TDS ?? "N/A"}</span>
         </div>
       </div>
     );
-
-  // Map frontend "land" to backend "soil"
-  const getBackendKey = (tab) => tab === "land" ? "soil" : tab;
-  const value = Math.floor(data.baseStats[getBackendKey(activeTab)] || 0);
+  } else {
+    const moisture = data.soilData?.moisture || 0;
+    sourceContent = (
+      <div className="flex flex-col items-center justify-center py-8">
+         <div className="relative w-32 h-32 flex items-center justify-center">
+            <svg className="w-full h-full transform -rotate-90">
+              <circle cx="64" cy="64" r="56" stroke="#fef3c7" strokeWidth="12" fill="transparent" />
+              <circle cx="64" cy="64" r="56" stroke="#d97706" strokeWidth="12" fill="transparent" strokeDasharray={`${moisture * 3.5} 360`} strokeLinecap="round" />
+            </svg>
+            <div className="absolute flex flex-col items-center">
+              <span className="text-3xl font-black text-amber-700">{moisture}%</span>
+              <span className="text-[10px] uppercase font-bold text-amber-600">Moisture</span>
+            </div>
+         </div>
+         <p className="text-xs text-center text-slate-500 mt-2 px-4">
+           Soil moisture is the primary indicator for soil health in this region.
+         </p>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 popup-bg backdrop-blur flex items-center justify-center p-6 z-[10000]">
-      <div className="bg-white/90 w-full max-w-[1500px] h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col">
+      <div className="bg-white/90 w-full max-w-[1500px] h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
 
         {/* HEADER */}
         <div className="flex justify-between px-12 py-6 border-b">
           <div>
-            <h2 className="text-3xl font-extrabold italic tracking-tight">{data.name}</h2>
+            <h2 className="text-3xl font-extrabold italic tracking-tight text-slate-900">{name}</h2>
             <p className="text-slate-400 uppercase text-sm tracking-wide flex items-center gap-1">
-              <MapPin size={14} /> Ward {data.wardId}
+              <MapPin size={14} /> Ward ID: {id}
             </p>
           </div>
-          <button onClick={onClose}><X size={24} className="text-slate-500 hover:text-slate-900 transition-all"/></button>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <X size={24} className="text-slate-500 hover:text-slate-900" />
+          </button>
         </div>
 
         {/* TABS */}
-        <div className="flex gap-10 px-12 pt-6 border-b">
+        <div className="flex gap-10 px-12 pt-6 border-b bg-white/40">
           {["air", "water", "land"].map((t) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              className={`pb-3 text-sm font-black uppercase tracking-widest transition ${
-                activeTab === t ? "border-b-4 border-black text-black" : "text-slate-400"
+              className={`pb-3 text-sm font-black uppercase tracking-widest transition border-b-4 ${
+                activeTab === t ? "border-black text-black" : "border-transparent text-slate-400 hover:text-slate-600"
               }`}
             >
               {t}
@@ -181,126 +284,101 @@ const Popup = ({ wardProps, onClose }) => {
         </div>
 
         {/* BODY */}
-        <div className="flex-1 overflow-y-auto p-10 space-y-14">
-
-          {/* MAP + SLIDERS */}
-          <div className="grid grid-cols-[520px_1fr] gap-10">
-
+        <div className="flex-1 overflow-y-auto p-10 space-y-10">
+          <div className="grid grid-cols-[500px_1fr] gap-10">
             {/* MAP */}
-            <div className={`p-6 rounded-3xl border ${getCardBorder(getBackendKey(activeTab))} bg-white/50 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] hover:shadow-[0_30px_70px_rgba(0,0,0,0.25)] transition-all relative`}>
-              <div className="h-[320px] rounded-2xl overflow-hidden relative z-10">
-                <MapContainer center={[28.61, 77.2]} zoom={13} className="w-full h-full z-0">
-                  <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
-                  <GeoJSON
-                    data={data.feature}
-                    style={{
-                      color: activeTab === "air" ? "#ef4444" : activeTab === "water" ? "#3b82f6" : activeTab === "land" ? "#f59e0b" : "#f59e0b",
-                      weight: 4,
-                      fillColor: activeTab === "air" ? "#fee2e2" : activeTab === "water" ? "#dbeafe" : activeTab === "land" ? "#fef3c7" : "#fef3c7",
-                      fillOpacity: 0.5,
-                      dashArray: "8,8",
-                      opacity: 0.9
-                    }}
-                  />
-                  <RecenterMap feature={data.feature} />
-                </MapContainer>
-              </div>
-
-              {/* Intensity Circle */}
-              <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 w-32 h-32 flex items-center justify-center z-50">
-                <div className={`${value > 300 ? "pulse-critical" : "pulse-safe"} absolute w-full h-full rounded-full`}></div>
-                <div className="relative w-32 h-32 rounded-full bg-white/90 border-8 border-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.25)] flex flex-col items-center justify-center">
-                  <div className={`text-4xl font-extrabold ${value > 300 ? "text-red-600" : "text-emerald-600"}`}>
-                    {value}
-                  </div>
-                  <div className="text-xs font-black uppercase tracking-widest">
-                    {value > 300 ? "Critical" : "Safe"}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* SLIDERS */}
-            <div className="flex flex-col gap-6">
-              {["air", "water", "land"].map((t) => {
-                const backendKey = t === "land" ? "soil" : t;
-                const v = data.baseStats[backendKey] || 0;
-                return (
-                  <div key={t} className={`p-5 rounded-2xl border ${getCardBorder(backendKey)} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
-                    <div className="flex flex-col">
-                      <div className="flex justify-between mb-2 text-sm uppercase tracking-wider text-slate-500 font-bold">
-                        <span>{t} quality</span>
-                        <span className={v > 300 ? "text-red-600" : "text-emerald-600"}>
-                          {v > 300 ? "Unsafe" : "Safe"}
-                        </span>
-                      </div>
-                      <div className="border-b border-slate-300 mb-2"></div>
-                      <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-700
-                            ${t === "air"
-                              ? "bg-gradient-to-r from-red-500 via-pink-500 to-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)]"
-                              : t === "water"
-                              ? "bg-gradient-to-r from-cyan-400 to-blue-500 shadow-[0_0_20px_rgba(34,211,238,0.6)]"
-                              : "bg-gradient-to-r from-yellow-400 to-amber-500 shadow-[0_0_20px_rgba(251,191,36,0.6)]"
-                            }`}
-                          style={{ width: `${Math.min(v / 5, 100)}%` }}
-                        />
-                      </div>
+            <div className={`p-4 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-xl shadow-lg relative flex flex-col`}>
+               <div className="flex-1 rounded-2xl overflow-hidden relative z-0">
+                  <MapContainer center={[28.61, 77.2]} zoom={13} className="w-full h-full">
+                    <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+                    <GeoJSON data={feature} style={{ color: "#333", weight: 2, fillOpacity: 0.2 }} />
+                    <RecenterMap feature={feature} />
+                  </MapContainer>
+               </div>
+               <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 z-20">
+                  <div className="relative w-28 h-28">
+                    <div className={`absolute inset-0 rounded-full ${mainValue > 200 ? 'bg-red-500' : 'bg-emerald-500'} opacity-20 animate-ping`}></div>
+                    <div className="absolute inset-0 rounded-full bg-white shadow-2xl border-4 border-white flex flex-col items-center justify-center">
+                       <span className={`text-3xl font-black ${mainValue > 200 ? 'text-red-600' : 'text-emerald-600'}`}>
+                         {mainValue}
+                       </span>
+                       <span className="text-[9px] font-bold uppercase text-slate-400 tracking-wider">Index</span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* POLICY + PIE */}
-          <div className="grid grid-cols-2 gap-10">
-            <div className={`p-8 rounded-3xl border ${getCardBorder(getBackendKey(activeTab))} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
-              <h3 className="font-extrabold uppercase mb-2 text-lg text-slate-900 tracking-wide">Mitigation & Policy</h3>
-              <div className="border-b border-slate-300 mb-4"></div>
-              {MOCK.governmentActions[getBackendKey(activeTab)].map((a, i) => (
-                <div key={i} className="flex gap-4 items-center bg-slate-50/60 p-4 rounded-xl mb-3 shadow-inner">
-                  <CheckCircle2 className="text-emerald-500" />
-                  <span className="font-semibold text-slate-800">{a}</span>
-                </div>
-              ))}
+               </div>
             </div>
 
-            <div className={`p-8 rounded-3xl text-center border ${getCardBorder(getBackendKey(activeTab))} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
-              <h3 className="font-extrabold uppercase mb-2 text-lg text-slate-900 tracking-wide">Pollution Sources</h3>
-              <div className="border-b border-slate-300 mb-4"></div>
-              <Donut data={MOCK.causes[getBackendKey(activeTab)]} />
-              <div className="mt-6 space-y-2 text-sm">
-                {MOCK.causes[getBackendKey(activeTab)].map((c, i) => (
-                  <div key={i} className="flex justify-between font-medium text-slate-700">
-                    <span>{c.source}</span>
-                    <span className="font-bold">{c.percent}%</span>
+            <div className="grid grid-cols-2 gap-8">
+               {/* CAUSES (with SMS Button) */}
+               <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-md shadow-sm`}>
+                  <h3 className="font-extrabold uppercase mb-2 text-slate-900 text-sm tracking-wide">
+                    {activeTab === "air" ? "Composition / Sources" : "Key Indicators"}
+                  </h3>
+                  <div className="w-10 h-1 bg-slate-200 mb-4 rounded-full"></div>
+                  {sourceContent}
+               </div>
+
+               {/* ACTIONS */}
+               <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-md shadow-sm overflow-y-auto max-h-[400px] custom-scrollbar`}>
+                  <h3 className="font-extrabold uppercase mb-2 text-slate-900 text-sm tracking-wide">Govt. Actions</h3>
+                  <div className="w-10 h-1 bg-slate-200 mb-4 rounded-full"></div>
+                  <div className="space-y-3">
+                    {data.governmentActions[backendKey]?.length > 0 ? (
+                      data.governmentActions[backendKey].map((action, i) => (
+                        <div key={i} className="flex gap-3 items-start bg-slate-50 p-3 rounded-lg">
+                          <CheckCircle2 size={18} className={action.implemented ? "text-emerald-500 mt-1" : "text-slate-300 mt-1"} />
+                          <div>
+                            <p className="text-sm font-semibold text-slate-700">{action.action}</p>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${action.implemented ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>
+                              {action.implemented ? 'IMPLEMENTED' : 'PLANNED'}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-slate-400 text-sm italic">No specific government actions recorded.</div>
+                    )}
                   </div>
-                ))}
+               </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-10 pb-6">
+            <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-md shadow-sm`}>
+              <div className="flex items-center justify-between mb-2">
+                 <h3 className="font-extrabold uppercase text-slate-900 text-sm tracking-wide">Citizen Safety Protocol</h3>
+                 <ShieldAlert size={18} className="text-slate-400" />
               </div>
+              <div className="w-10 h-1 bg-slate-200 mb-6 rounded-full"></div>
+              {data.citizenSafety && data.citizenSafety[backendKey] && data.citizenSafety[backendKey].length > 0 ? (
+                <ul className="grid grid-cols-2 gap-x-8 gap-y-3">
+                   {data.citizenSafety[backendKey].map((tip, i) => (
+                     <li key={i} className="flex items-start gap-2 text-sm font-medium text-slate-700">
+                       <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 shrink-0"></span>
+                       {tip}
+                     </li>
+                   ))}
+                </ul>
+              ) : (
+                <div className="flex items-center gap-2 text-slate-400 italic text-sm">
+                   <CheckCircle2 size={16} /> No critical safety alerts for this zone.
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* CITIZENS */}
-          <div className="grid grid-cols-2 gap-10">
-            <div className={`p-8 rounded-3xl border ${getCardBorder(getBackendKey(activeTab))} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
-              <h3 className="font-extrabold uppercase mb-2 text-slate-900 tracking-wide">Protect Yourself</h3>
-              <div className="border-b border-slate-300 mb-4"></div>
-              <ul className="list-disc ml-6 text-slate-700 font-medium">
-                {MOCK.citizenSafety[getBackendKey(activeTab)].map((s, i) => <li key={i}>{s}</li>)}
+            <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-md shadow-sm`}>
+              <h3 className="font-extrabold uppercase mb-2 text-slate-900 text-sm tracking-wide">Community Mitigation</h3>
+              <div className="w-10 h-1 bg-slate-200 mb-6 rounded-full"></div>
+              <ul className="grid grid-cols-1 gap-3">
+                 {STATIC_MITIGATION[backendKey]?.map((tip, i) => (
+                   <li key={i} className="flex items-center gap-3 text-sm font-semibold text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                     <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">{i+1}</div>
+                     {tip}
+                   </li>
+                 ))}
               </ul>
             </div>
-
-            <div className={`p-8 rounded-3xl border ${getCardBorder(getBackendKey(activeTab))} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
-              <h3 className="font-extrabold uppercase mb-2 text-slate-900 tracking-wide">Prevent & Mitigate</h3>
-              <div className="border-b border-slate-300 mb-4"></div>
-              <ul className="list-disc ml-6 text-slate-700 font-medium">
-                {MOCK.mitigationTips[getBackendKey(activeTab)].map((s, i) => <li key={i}>{s}</li>)}
-              </ul>
-            </div>
           </div>
-
         </div>
       </div>
     </div>
