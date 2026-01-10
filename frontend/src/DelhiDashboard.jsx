@@ -40,7 +40,7 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses }) => {
       )}
 
       <nav className="cyber-nav">
-        {["weather", "air", "water", "soil"].map((t) => (
+        {["weather", "air", "water", "land"].map((t) => (
           <button
             key={t}
             className={`nav-item ${activeTab === t ? "active" : ""}`}
@@ -148,20 +148,20 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses }) => {
             </>
           )}
 
-          {activeTab === "soil" && (
+          {activeTab === "land" && (
             <>
-              <div className="hero-stat soil-color">
+              <div className="hero-stat land-color">
                 <label>MOISTURE</label>
                 <div className="huge-val">{data.soil.moisture}</div>
               </div>
               <div className="detail-grid">
-                <div className="data-tile tile-soil"><label>NUTRIENTS</label><span>{data.soil.nutrients}</span></div>
-                <div className="data-tile tile-soil"><label>PH</label><span>{data.soil.ph}</span></div>
+                <div className="data-tile tile-land"><label>NUTRIENTS</label><span>{data.soil.nutrients}</span></div>
+                <div className="data-tile tile-land"><label>PH</label><span>{data.soil.ph}</span></div>
               </div>
               <div className="sim-divider" />
 
                 <div className="sim-section">
-                    <div className="sim-title">SOIL FACTORS</div>
+                    <div className="sim-title">LAND FACTORS</div>
 
                     {getCausesForTab().map(cause => (
                     <div key={cause.id} className="sim-control">

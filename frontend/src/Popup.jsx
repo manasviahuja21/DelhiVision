@@ -106,7 +106,7 @@ const Donut = ({ data }) => {
 const getCardBorder = (tab) => {
   if (tab === "air") return "border-red-300";
   if (tab === "water") return "border-blue-300";
-  if (tab === "soil") return "border-amber-300";
+  if (tab === "land") return "border-amber-300";
   return "border-slate-200";
 };
 
@@ -146,7 +146,9 @@ const Popup = ({ wardProps, onClose }) => {
       </div>
     );
 
-  const value = Math.floor(data.baseStats[activeTab] || 0);
+  // Map frontend "land" to backend "soil"
+  const getBackendKey = (tab) => tab === "land" ? "soil" : tab;
+  const value = Math.floor(data.baseStats[getBackendKey(activeTab)] || 0);
 
   return (
     <div className="fixed inset-0 popup-bg backdrop-blur flex items-center justify-center p-6 z-[10000]">
@@ -165,7 +167,7 @@ const Popup = ({ wardProps, onClose }) => {
 
         {/* TABS */}
         <div className="flex gap-10 px-12 pt-6 border-b">
-          {["air", "water", "soil"].map((t) => (
+          {["air", "water", "land"].map((t) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
@@ -185,16 +187,16 @@ const Popup = ({ wardProps, onClose }) => {
           <div className="grid grid-cols-[520px_1fr] gap-10">
 
             {/* MAP */}
-            <div className={`p-6 rounded-3xl border ${getCardBorder(activeTab)} bg-white/50 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] hover:shadow-[0_30px_70px_rgba(0,0,0,0.25)] transition-all relative`}>
+            <div className={`p-6 rounded-3xl border ${getCardBorder(getBackendKey(activeTab))} bg-white/50 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] hover:shadow-[0_30px_70px_rgba(0,0,0,0.25)] transition-all relative`}>
               <div className="h-[320px] rounded-2xl overflow-hidden relative z-10">
                 <MapContainer center={[28.61, 77.2]} zoom={13} className="w-full h-full z-0">
                   <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
                   <GeoJSON
                     data={data.feature}
                     style={{
-                      color: activeTab === "air" ? "#ef4444" : activeTab === "water" ? "#3b82f6" : "#f59e0b",
+                      color: activeTab === "air" ? "#ef4444" : activeTab === "water" ? "#3b82f6" : activeTab === "land" ? "#f59e0b" : "#f59e0b",
                       weight: 4,
-                      fillColor: activeTab === "air" ? "#fee2e2" : activeTab === "water" ? "#dbeafe" : "#fef3c7",
+                      fillColor: activeTab === "air" ? "#fee2e2" : activeTab === "water" ? "#dbeafe" : activeTab === "land" ? "#fef3c7" : "#fef3c7",
                       fillOpacity: 0.5,
                       dashArray: "8,8",
                       opacity: 0.9
@@ -220,10 +222,11 @@ const Popup = ({ wardProps, onClose }) => {
 
             {/* SLIDERS */}
             <div className="flex flex-col gap-6">
-              {["air", "water", "soil"].map((t) => {
-                const v = data.baseStats[t] || 0;
+              {["air", "water", "land"].map((t) => {
+                const backendKey = t === "land" ? "soil" : t;
+                const v = data.baseStats[backendKey] || 0;
                 return (
-                  <div key={t} className={`p-5 rounded-2xl border ${getCardBorder(t)} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
+                  <div key={t} className={`p-5 rounded-2xl border ${getCardBorder(backendKey)} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
                     <div className="flex flex-col">
                       <div className="flex justify-between mb-2 text-sm uppercase tracking-wider text-slate-500 font-bold">
                         <span>{t} quality</span>
@@ -253,10 +256,10 @@ const Popup = ({ wardProps, onClose }) => {
 
           {/* POLICY + PIE */}
           <div className="grid grid-cols-2 gap-10">
-            <div className={`p-8 rounded-3xl border ${getCardBorder(activeTab)} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
+            <div className={`p-8 rounded-3xl border ${getCardBorder(getBackendKey(activeTab))} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
               <h3 className="font-extrabold uppercase mb-2 text-lg text-slate-900 tracking-wide">Mitigation & Policy</h3>
               <div className="border-b border-slate-300 mb-4"></div>
-              {MOCK.governmentActions[activeTab].map((a, i) => (
+              {MOCK.governmentActions[getBackendKey(activeTab)].map((a, i) => (
                 <div key={i} className="flex gap-4 items-center bg-slate-50/60 p-4 rounded-xl mb-3 shadow-inner">
                   <CheckCircle2 className="text-emerald-500" />
                   <span className="font-semibold text-slate-800">{a}</span>
@@ -264,12 +267,12 @@ const Popup = ({ wardProps, onClose }) => {
               ))}
             </div>
 
-            <div className={`p-8 rounded-3xl text-center border ${getCardBorder(activeTab)} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
+            <div className={`p-8 rounded-3xl text-center border ${getCardBorder(getBackendKey(activeTab))} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
               <h3 className="font-extrabold uppercase mb-2 text-lg text-slate-900 tracking-wide">Pollution Sources</h3>
               <div className="border-b border-slate-300 mb-4"></div>
-              <Donut data={MOCK.causes[activeTab]} />
+              <Donut data={MOCK.causes[getBackendKey(activeTab)]} />
               <div className="mt-6 space-y-2 text-sm">
-                {MOCK.causes[activeTab].map((c, i) => (
+                {MOCK.causes[getBackendKey(activeTab)].map((c, i) => (
                   <div key={i} className="flex justify-between font-medium text-slate-700">
                     <span>{c.source}</span>
                     <span className="font-bold">{c.percent}%</span>
@@ -281,19 +284,19 @@ const Popup = ({ wardProps, onClose }) => {
 
           {/* CITIZENS */}
           <div className="grid grid-cols-2 gap-10">
-            <div className={`p-8 rounded-3xl border ${getCardBorder(activeTab)} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
+            <div className={`p-8 rounded-3xl border ${getCardBorder(getBackendKey(activeTab))} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
               <h3 className="font-extrabold uppercase mb-2 text-slate-900 tracking-wide">Protect Yourself</h3>
               <div className="border-b border-slate-300 mb-4"></div>
               <ul className="list-disc ml-6 text-slate-700 font-medium">
-                {MOCK.citizenSafety[activeTab].map((s, i) => <li key={i}>{s}</li>)}
+                {MOCK.citizenSafety[getBackendKey(activeTab)].map((s, i) => <li key={i}>{s}</li>)}
               </ul>
             </div>
 
-            <div className={`p-8 rounded-3xl border ${getCardBorder(activeTab)} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
+            <div className={`p-8 rounded-3xl border ${getCardBorder(getBackendKey(activeTab))} bg-white/50 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all`}>
               <h3 className="font-extrabold uppercase mb-2 text-slate-900 tracking-wide">Prevent & Mitigate</h3>
               <div className="border-b border-slate-300 mb-4"></div>
               <ul className="list-disc ml-6 text-slate-700 font-medium">
-                {MOCK.mitigationTips[activeTab].map((s, i) => <li key={i}>{s}</li>)}
+                {MOCK.mitigationTips[getBackendKey(activeTab)].map((s, i) => <li key={i}>{s}</li>)}
               </ul>
             </div>
           </div>

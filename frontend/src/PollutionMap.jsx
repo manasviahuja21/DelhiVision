@@ -3,12 +3,14 @@ import { MapContainer, TileLayer, GeoJSON, ZoomControl, useMap } from 'react-lea
 import 'leaflet/dist/leaflet.css';
 import Popup from './Popup';
 import DelhiDashboard from './DelhiDashboard';
+import WardSearch from './components/WardSearch';
 import Loader from "./Loader";
 
 // --- CSS ---
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
   body { margin: 0; background: #f4f6f8; overflow: hidden; font-family: 'Manrope', sans-serif; }
+  
 
   .texture-overlay {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10;
@@ -141,7 +143,7 @@ const PollutionMap = () => {
               ...props,
               id,
               baseStats,
-              type: props.isRiver || props.natural === 'water' ? 'water' : 'land'
+              type: props.isRiver || props.natural === 'water' ? 'water' : 'soil'
             }
           };
         })
@@ -150,7 +152,16 @@ const PollutionMap = () => {
     };
     fetchMapData();
   }, []);
+// This extracts the names from your GeoJSON for the Search Bar
+  const wardList = useMemo(() => {
+    if (!mapData) return [];
+    return mapData.features
+      .map(f => f.properties.id)
+      .filter(id => id !== '#');
+  }, [mapData]);
+  // ---------------------------
 
+  const getSimulatedValue = (base, factor) => Math.floor(base * factor);
   const toggleLayer = (layerKey) => {
     setVisibleLayers(prev => ({ ...prev, [layerKey]: !prev[layerKey] }));
   };
@@ -158,8 +169,6 @@ const PollutionMap = () => {
   const updateCause = (id, value) => {
     setCauseValues(prev => ({ ...prev, [id]: parseFloat(value) }));
   };
-
-  const getSimulatedValue = (base, factor) => Math.floor(base * factor);
 
   const getSoilFillStyle = (feature) => {
     if (feature.properties.type === 'water') return { weight: 0, opacity: 0, fillOpacity: 0 };
@@ -172,7 +181,7 @@ const PollutionMap = () => {
   };
 
   const getRiverStyle = (feature) => {
-    if (feature.properties.type === 'land') return { weight: 0, opacity: 0, fillOpacity: 0 };
+    if (feature.properties.type === 'soil') return { weight: 0, opacity: 0, fillOpacity: 0 };
     const val = getSimulatedValue(feature.properties.baseStats.water, currentFactors.water);
     let color = '#29b6f6'; 
     if (val > 150) color = '#bf360c'; 
@@ -213,7 +222,7 @@ const PollutionMap = () => {
         <div style="font-size: 14px; font-weight: 800; color: #111; margin-bottom: 8px;">${feature.properties.id}</div>
         ${!isWater ? `
           <div style="display:flex; gap: 8px; font-size: 11px; font-weight: 600;">
-            <span style="background: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 4px;">Soil: ${currentSoil}</span>
+            <span style="background: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 4px;">land: ${currentSoil}</span>
             <span style="background: #f5f5f5; color: #616161; padding: 2px 6px; border-radius: 4px;">Air: ${currentAir}</span>
           </div>
         ` : `
@@ -273,7 +282,26 @@ const PollutionMap = () => {
         </MapContainer>
         <div className="map-grade"></div>
       </div>
-
+      {/* --- INSERT WARDSEARCH HERE --- */}
+      <WardSearch 
+        wards={wardList} 
+        onWardSelect={(wardName) => {
+          const feature = mapData.features.find(f => f.properties.id === wardName);
+          if (feature) {
+            const currentSoil = getSimulatedValue(feature.properties.baseStats.soil, currentFactors.soil);
+            const currentAir = getSimulatedValue(feature.properties.baseStats.air, currentFactors.air);
+            const currentWater = getSimulatedValue(feature.properties.baseStats.water, currentFactors.water);
+            
+            setSelectedWard({
+              id: feature.properties.id,
+              name: feature.properties.id,
+              baseStats: feature.properties.baseStats,
+              stats: { air: currentAir, soil: currentSoil, water: currentWater },
+              feature: feature
+            });
+          }
+        }} 
+      />
       {/* Floating Dashboard */}
       <DelhiDashboard
         causeValues={causeValues}
@@ -314,7 +342,7 @@ const PollutionMap = () => {
         <div style={{ fontSize: '12px', fontWeight: '700', color: '#4a5568', marginBottom: '15px', textTransform:'uppercase', letterSpacing:'1px' }}>Index Guide</div>
         <div style={{marginBottom: '12px'}}>
            <div style={{display:'flex', justifyContent:'space-between', fontSize:'10px', fontWeight:'600', color:'#718096', marginBottom:'4px'}}>
-             <span>Soil</span> <span>Safe → Toxic</span>
+             <span>land</span> <span>Safe → Toxic</span>
            </div>
            <div style={{ height: '6px', borderRadius: '3px', width: '100%' }} className="grad-soil"></div>
         </div>
@@ -339,7 +367,7 @@ const PollutionMap = () => {
         padding: '12px 20px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', 
         display: 'flex', gap: '16px', border: '1px solid rgba(0,0,0,0.05)'
       }}>
-        {['air', 'water', 'soil'].map((layer) => (
+        {['air', 'water', 'land'].map((layer) => (
           <button
             key={layer}
             onClick={() => toggleLayer(layer)}
