@@ -214,6 +214,33 @@ app.get('/api/ward/:wardId', async (req, res) => {
     feature
   });
 });
+const { sendSMS } = require('./twiliohelper');
+
+app.post('/api/ward/:wardId/sms', async (req, res) => {
+  const { wardId } = req.params;
+  const { phone } = req.body;  // recipient number, include +91
+
+  try {
+    // 1️⃣ Get ward AQI & safety
+    const cpcbData = await getWardCPCBData(wardId);
+    const airPollutants = cpcbData.pollutants || [];
+    const dominant = cpcbData.dominantPollutant || "N/A";
+
+    const safetyMsg = `Alert for ${wardId} Ward:
+Dominant Air Pollutant: ${dominant}
+AQI: ${cpcbData.aqi || 'N/A'}
+Safety Measures: Wear masks, avoid outdoor activity`;
+
+    // 2️⃣ Send SMS via Twilio
+    const result = await sendSMS(phone, safetyMsg);
+
+    res.json({ success: result.success, sid: result.sid || null, error: result.error || null });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ================= START =================
 app.get('/api/weather', async (req, res) => {
   const weather = await getDelhiWeather();

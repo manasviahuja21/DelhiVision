@@ -23,7 +23,7 @@ const RecenterMap = ({ feature }) => {
 const Donut = ({ data }) => {
   const [hovered, setHovered] = useState(null);
   let acc = 0;
-  const colors = ["#ef4444", "#3b82f6", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899"];
+  const colors = ["#ef4444", "#3b82f6", "#fec21d", "#10b981", "#8b5cf6", "#ec4899", "#be9116", "#6b0e52"];
 
   if (!data || data.length === 0) {
     return (
