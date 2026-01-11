@@ -5,6 +5,7 @@ import Popup from './Popup';
 import DelhiDashboard from './DelhiDashboard';
 import WardSearch from './components/WardSearch';
 import Loader from "./Loader";
+import WardsRanking from './WardsRanking';
 
 // --- CSS ---
 const styles = `
@@ -79,6 +80,7 @@ const PollutionMap = () => {
 
   const [mapData, setMapData] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
+  const [showRanking, setShowRanking] = useState(false);
   
   const [delhiStats, setDelhiStats] = useState({
     air: 0, water: 0, soil: 0, 
@@ -349,20 +351,18 @@ const PollutionMap = () => {
             <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '900', background: 'linear-gradient(90deg, #111827, #374151)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.8px' }}>DELHI VISION</h1>
             <div style={{ fontSize: '11px', color: '#718096', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: '700' }}>Environmental Policy Dashboard</div>
             
-            <div style={{ display: 'flex', gap: '15px', marginTop: '15px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '15px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '10px', color: '#718096', fontWeight: '700' }}>AVG AQI</span>
-                    <span style={{ fontSize: '18px', fontWeight: '800', color: '#f59e0b' }}>{delhiStats.air}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '10px', color: '#718096', fontWeight: '700' }}>AVG SQI</span>
-                    <span style={{ fontSize: '18px', fontWeight: '800', color: '#d97706' }}>{delhiStats.soil}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '10px', color: '#718096', fontWeight: '700' }}>AVG WQI</span>
-                    <span style={{ fontSize: '18px', fontWeight: '800', color: '#3b82f6' }}>{delhiStats.water}</span>
-                </div>
-            </div>
+            <button 
+              onClick={() => setShowRanking(true)}
+              style={{
+                marginTop: '15px', width: '100%', padding: '10px', borderRadius: '10px',
+                border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.8)', 
+                fontWeight: '800', cursor: 'pointer', color: '#1a202c', fontSize: '12px',
+                textTransform: 'uppercase', letterSpacing: '0.5px', transition: '0.2s'
+              }}
+            >
+              🏆 View Ward Rankings
+            </button>
+
           </div>
           
           <div style={{ position: 'fixed', bottom: 100, left: 30, zIndex: 500, background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', padding: '20px', borderRadius: '16px', width: '200px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
@@ -379,6 +379,20 @@ const PollutionMap = () => {
           </div>
           
           {selectedWard && <Popup wardProps={selectedWard} onClose={() => setSelectedWard(null)} />}
+
+            {showRanking && (
+            <>
+              <div 
+                style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 1999, backdropFilter: 'blur(4px)' }} 
+                onClick={() => setShowRanking(false)} 
+              />
+              <WardsRanking 
+                mapData={mapData} 
+                currentFactors={currentFactors} // Add this line
+                onClose={() => setShowRanking(false)} 
+              />
+            </>
+          )}
         </>
       )}
     </>

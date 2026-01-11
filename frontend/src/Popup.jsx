@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, CheckCircle2, MapPin, Activity, Droplets, FlaskConical, ShieldAlert, BellRing, Send } from "lucide-react";
+import { X, CheckCircle2, MapPin, Activity, Droplets, FlaskConical, ShieldAlert, BellRing, Send, Smartphone } from "lucide-react";
 import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -25,9 +25,9 @@ const Donut = ({ data }) => {
 
   if (!data || data.length === 0) {
     return (
-        <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-slate-200 rounded-full w-40 mx-auto">
-            <span className="text-xs text-slate-400 font-bold">NO DATA</span>
-        </div>
+      <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-slate-200 rounded-full w-40 mx-auto">
+        <span className="text-xs text-slate-400 font-bold">NO DATA</span>
+      </div>
     );
   }
 
@@ -67,12 +67,12 @@ const Donut = ({ data }) => {
           })}
         </svg>
         <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-            <span className="text-2xl font-black text-slate-700">
-                {hovered !== null ? Math.round(chartData[hovered].percent) + "%" : "100%"}
-            </span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase">
-                {hovered !== null ? chartData[hovered].pollutant : "Composition"}
-            </span>
+          <span className="text-2xl font-black text-slate-700">
+            {hovered !== null ? Math.round(chartData[hovered].percent) + "%" : "100%"}
+          </span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase">
+            {hovered !== null ? chartData[hovered].pollutant : "Composition"}
+          </span>
         </div>
       </div>
     </div>
@@ -87,7 +87,7 @@ const getCardBorder = (tab) => {
   return "border-slate-200";
 };
 
-/* ---------------- STATIC MITIGATION (Fallback Only) ---------------- */
+/* ---------------- STATIC MITIGATION ---------------- */
 const STATIC_MITIGATION = {
   air: ["Use public transport", "Stop waste burning", "Plant air-purifying plants"],
   water: ["Fix leaking taps", "Do not dump oil in drains", "Harvest rainwater"],
@@ -96,51 +96,39 @@ const STATIC_MITIGATION = {
 
 const Popup = ({ wardProps, onClose }) => {
   const [activeTab, setActiveTab] = useState("air");
-  
-  // SMS Alert States
   const [phoneNumber, setPhoneNumber] = useState("");
   const [smsStatus, setSmsStatus] = useState("idle");
 
   const { name, id, stats, data, feature } = wardProps || {};
-
   const getBackendKey = (tab) => tab === "land" ? "soil" : tab;
   const backendKey = getBackendKey(activeTab);
 
   if (!data) return null;
 
   const mainValue = Math.floor(stats[backendKey] || 0);
-  let sourceContent;
 
-  // --- HANDLE SMS SUBMISSION ---
   const handleSendSMS = async () => {
     if (!phoneNumber || phoneNumber.length < 10) return;
-    
     setSmsStatus("sending");
-    
     try {
       const response = await fetch(`http://localhost:5005/api/ward/${id}/sms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            phone: phoneNumber, 
-            wardId: id 
-        })
+        body: JSON.stringify({ phone: phoneNumber, wardId: id })
       });
-
       if (response.ok) {
         setSmsStatus("success");
-        setTimeout(() => setSmsStatus("idle"), 3000); 
-        setPhoneNumber(""); 
-      } else {
-        setSmsStatus("error");
-      }
+        setTimeout(() => setSmsStatus("idle"), 3000);
+        setPhoneNumber("");
+      } else { setSmsStatus("error"); }
     } catch (error) {
       console.error("SMS Failed:", error);
       setSmsStatus("error");
     }
   };
 
-  // --- CONTENT LOGIC ---
+  // --- TAB CONTENT CONTENT ---
+  let sourceContent;
   if (activeTab === "air") {
     const rawData = data.airPollutants?.data || [];
     const pollutants = rawData.map(item => ({
@@ -152,9 +140,7 @@ const Popup = ({ wardProps, onClose }) => {
     sourceContent = (
       <>
         <Donut data={pollutants} />
-        
-        {/* List */}
-        <div className="mt-4 space-y-2 text-sm max-h-[120px] overflow-y-auto custom-scrollbar">
+        <div className="mt-4 space-y-2 text-sm max-h-[160px] overflow-y-auto custom-scrollbar">
           {pollutants.length > 0 ? pollutants.map((c, i) => (
             <div key={i} className="flex justify-between font-medium text-slate-700 border-b border-slate-100 pb-1">
               <span className="uppercase text-xs tracking-wider font-bold">{c.pollutant}</span>
@@ -162,72 +148,25 @@ const Popup = ({ wardProps, onClose }) => {
             </div>
           )) : <div className="text-center text-slate-400 text-xs py-4">Pollutant data unavailable</div>}
         </div>
-
-        {/* 🚨 SMS ALERT SECTION (Updated Layout) 🚨 */}
-        <div className="mt-6 pt-4 border-t border-slate-200">
-            <div className="flex items-center gap-2 mb-3">
-                {/* Animation Removed */}
-                <BellRing size={16} className="text-red-500" /> 
-                <span className="text-xs font-black text-slate-700 tracking-widest uppercase">Emergency Alerts</span>
-            </div>
-            
-            {/* New Line Layout */}
-            <div className="flex flex-col gap-3">
-                <input 
-                    type="tel" 
-                    placeholder="+91 Phone Number" 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all font-medium text-slate-700 placeholder:text-slate-400"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                />
-                <button 
-                    onClick={handleSendSMS}
-                    disabled={smsStatus === "sending" || smsStatus === "success"}
-                    className={`w-full px-4 py-3 rounded-xl font-bold text-xs tracking-wider text-white transition-all shadow-md flex items-center justify-center gap-2
-                        ${smsStatus === 'success' ? 'bg-emerald-500 hover:bg-emerald-600' : 
-                          smsStatus === 'error' ? 'bg-slate-700' : 'bg-red-500 hover:bg-red-600 active:scale-95'}
-                    `}
-                >
-                    {smsStatus === "sending" ? (
-                        <>SENDING... <Activity size={14} className="animate-spin" /></>
-                    ) : smsStatus === "success" ? (
-                        <>SUBSCRIBED <CheckCircle2 size={14} /></>
-                    ) : (
-                        <>GET SMS ALERTS <Send size={12} /></>
-                    )}
-                </button>
-            </div>
-
-            {smsStatus === "success" && <p className="text-[10px] text-center text-emerald-600 mt-2 font-bold">✓ Alerts sent for Ward {id}</p>}
-            {smsStatus === "error" && <p className="text-[10px] text-center text-red-500 mt-2 font-bold">✗ Failed to alert. Try again.</p>}
-        </div>
       </>
     );
   } else if (activeTab === "water") {
     const { Nitrate, ph, TDS } = data.waterData || {};
     sourceContent = (
       <div className="grid grid-cols-1 gap-4 mt-4">
-        <div className="bg-blue-50 p-4 rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <FlaskConical className="text-blue-500" size={20}/>
-            <span className="font-bold text-slate-700">Nitrate</span>
+        {[
+          { label: "Nitrate", val: Nitrate, icon: <FlaskConical size={20}/>, bg: "bg-blue-50", text: "text-blue-600" },
+          { label: "pH Level", val: ph, icon: <Activity size={20}/>, bg: "bg-cyan-50", text: "text-cyan-600" },
+          { label: "TDS", val: TDS, icon: <Droplets size={20}/>, bg: "bg-indigo-50", text: "text-indigo-600" }
+        ].map((item, i) => (
+          <div key={i} className={`${item.bg} p-4 rounded-xl flex items-center justify-between`}>
+            <div className="flex items-center gap-3">
+              <span className={item.text.replace('600', '500')}>{item.icon}</span>
+              <span className="font-bold text-slate-700">{item.label}</span>
+            </div>
+            <span className={`font-black text-xl ${item.text}`}>{item.val ?? "N/A"}</span>
           </div>
-          <span className="font-black text-xl text-blue-600">{Nitrate ?? "N/A"}</span>
-        </div>
-        <div className="bg-cyan-50 p-4 rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Activity className="text-cyan-500" size={20}/>
-            <span className="font-bold text-slate-700">pH Level</span>
-          </div>
-          <span className="font-black text-xl text-cyan-600">{ph ?? "N/A"}</span>
-        </div>
-        <div className="bg-indigo-50 p-4 rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Droplets className="text-indigo-500" size={20}/>
-            <span className="font-bold text-slate-700">TDS</span>
-          </div>
-          <span className="font-black text-xl text-indigo-600">{TDS ?? "N/A"}</span>
-        </div>
+        ))}
       </div>
     );
   } else {
@@ -244,7 +183,7 @@ const Popup = ({ wardProps, onClose }) => {
               <span className="text-[10px] uppercase font-bold text-amber-600">Moisture</span>
             </div>
          </div>
-         <p className="text-xs text-center text-slate-500 mt-2 px-4">
+         <p className="text-xs text-center text-slate-500 mt-4 px-4">
            Soil moisture is the primary indicator for soil health in this region.
          </p>
       </div>
@@ -256,7 +195,7 @@ const Popup = ({ wardProps, onClose }) => {
       <div className="bg-white/90 w-full max-w-[1500px] h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
 
         {/* HEADER */}
-        <div className="flex justify-between px-12 py-6 border-b">
+        <div className="flex justify-between px-12 py-6 border-b bg-white">
           <div>
             <h2 className="text-3xl font-extrabold italic tracking-tight text-slate-900">{name}</h2>
             <p className="text-slate-400 uppercase text-sm tracking-wide flex items-center gap-1">
@@ -284,10 +223,10 @@ const Popup = ({ wardProps, onClose }) => {
         </div>
 
         {/* BODY */}
-        <div className="flex-1 overflow-y-auto p-10 space-y-10">
+        <div className="flex-1 overflow-y-auto p-10 space-y-10 custom-scrollbar">
           <div className="grid grid-cols-[500px_1fr] gap-10">
-            {/* MAP */}
-            <div className={`p-4 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-xl shadow-lg relative flex flex-col`}>
+            {/* MAP CARD */}
+            <div className={`p-4 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-xl shadow-lg relative flex flex-col h-[450px]`}>
                <div className="flex-1 rounded-2xl overflow-hidden relative z-0">
                   <MapContainer center={[28.61, 77.2]} zoom={13} className="w-full h-full">
                     <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
@@ -299,18 +238,18 @@ const Popup = ({ wardProps, onClose }) => {
                   <div className="relative w-28 h-28">
                     <div className={`absolute inset-0 rounded-full ${mainValue > 200 ? 'bg-red-500' : 'bg-emerald-500'} opacity-20 animate-ping`}></div>
                     <div className="absolute inset-0 rounded-full bg-white shadow-2xl border-4 border-white flex flex-col items-center justify-center">
-                       <span className={`text-3xl font-black ${mainValue > 200 ? 'text-red-600' : 'text-emerald-600'}`}>
-                         {mainValue}
-                       </span>
-                       <span className="text-[9px] font-bold uppercase text-slate-400 tracking-wider">Index</span>
+                        <span className={`text-3xl font-black ${mainValue > 200 ? 'text-red-600' : 'text-emerald-600'}`}>
+                          {mainValue}
+                        </span>
+                        <span className="text-[9px] font-bold uppercase text-slate-400 tracking-wider">Index</span>
                     </div>
                   </div>
                </div>
             </div>
 
             <div className="grid grid-cols-2 gap-8">
-               {/* CAUSES (with SMS Button) */}
-               <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-md shadow-sm`}>
+               {/* DATA SOURCES CARD */}
+               <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white shadow-sm`}>
                   <h3 className="font-extrabold uppercase mb-2 text-slate-900 text-sm tracking-wide">
                     {activeTab === "air" ? "Composition / Sources" : "Key Indicators"}
                   </h3>
@@ -318,8 +257,8 @@ const Popup = ({ wardProps, onClose }) => {
                   {sourceContent}
                </div>
 
-               {/* ACTIONS */}
-               <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-md shadow-sm overflow-y-auto max-h-[400px] custom-scrollbar`}>
+               {/* GOVT ACTIONS CARD */}
+               <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white shadow-sm overflow-y-auto h-[450px] custom-scrollbar`}>
                   <h3 className="font-extrabold uppercase mb-2 text-slate-900 text-sm tracking-wide">Govt. Actions</h3>
                   <div className="w-10 h-1 bg-slate-200 mb-4 rounded-full"></div>
                   <div className="space-y-3">
@@ -343,8 +282,9 @@ const Popup = ({ wardProps, onClose }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-10 pb-6">
-            <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-md shadow-sm`}>
+          {/* LOWER GRID: SAFETY & MITIGATION */}
+          <div className="grid grid-cols-2 gap-10">
+            <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white shadow-sm`}>
               <div className="flex items-center justify-between mb-2">
                  <h3 className="font-extrabold uppercase text-slate-900 text-sm tracking-wide">Citizen Safety Protocol</h3>
                  <ShieldAlert size={18} className="text-slate-400" />
@@ -360,13 +300,11 @@ const Popup = ({ wardProps, onClose }) => {
                    ))}
                 </ul>
               ) : (
-                <div className="flex items-center gap-2 text-slate-400 italic text-sm">
-                   <CheckCircle2 size={16} /> No critical safety alerts for this zone.
-                </div>
+                <div className="flex items-center gap-2 text-slate-400 italic text-sm"><CheckCircle2 size={16} /> No critical safety alerts.</div>
               )}
             </div>
 
-            <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-md shadow-sm`}>
+            <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white shadow-sm`}>
               <h3 className="font-extrabold uppercase mb-2 text-slate-900 text-sm tracking-wide">Community Mitigation</h3>
               <div className="w-10 h-1 bg-slate-200 mb-6 rounded-full"></div>
               <ul className="grid grid-cols-1 gap-3">
@@ -379,6 +317,56 @@ const Popup = ({ wardProps, onClose }) => {
               </ul>
             </div>
           </div>
+
+          {/* 🚨 NEW SEPARATE SMS SECTION 🚨 */}
+          <div className="bg-gradient-to-r from-red-50 to-white border-2 border-red-100 rounded-[2rem] p-10 flex flex-col md:flex-row items-center gap-8 shadow-inner">
+             <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                   <div className="p-2 bg-red-500 rounded-lg text-white">
+                      <BellRing size={20} className="animate-pulse" />
+                   </div>
+                   <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Emergency Alert Network</h3>
+                </div>
+                <p className="text-slate-500 text-sm max-w-md font-medium">
+                  Join the critical response network for <b>Ward {id}</b>. Receive real-time SMS notifications when environmental thresholds are breached.
+                </p>
+             </div>
+
+             <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3">
+                <div className="relative">
+                  <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <input 
+                    type="tel" 
+                    placeholder="Enter Phone Number" 
+                    className="pl-12 pr-4 py-4 w-full sm:w-80 bg-white border-2 border-slate-100 rounded-2xl text-base outline-none focus:border-red-400 transition-all font-bold text-slate-700 shadow-sm"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                  />
+                </div>
+                <button 
+                  onClick={handleSendSMS}
+                  disabled={smsStatus === "sending" || smsStatus === "success"}
+                  className={`px-8 py-4 rounded-2xl font-black text-sm tracking-widest text-white transition-all shadow-lg flex items-center justify-center gap-3 active:scale-95
+                    ${smsStatus === 'success' ? 'bg-emerald-500 shadow-emerald-200' : 
+                      smsStatus === 'error' ? 'bg-slate-800' : 'bg-red-600 hover:bg-red-700 shadow-red-200'}
+                  `}
+                >
+                  {smsStatus === "sending" ? (
+                    <>SENDING <Activity size={18} className="animate-spin" /></>
+                  ) : smsStatus === "success" ? (
+                    <>ACTIVATED <CheckCircle2 size={18} /></>
+                  ) : (
+                    <>SUBSCRIBE NOW <Send size={16} /></>
+                  )}
+                </button>
+             </div>
+          </div>
+          {/* Status Messages for SMS */}
+          <div className="flex justify-center -mt-6">
+             {smsStatus === "success" && <p className="text-sm text-emerald-600 font-black animate-bounce">✓ Subscription active for {name} (Ward {id})</p>}
+             {smsStatus === "error" && <p className="text-sm text-red-500 font-bold">✗ Subscription failed. Please check the network.</p>}
+          </div>
+
         </div>
       </div>
     </div>

@@ -2,12 +2,19 @@ import React, { useState } from "react";
 import "./DelhiDashboard.css";
 
 const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses, delhiStats }) => {
-  const getCausesForTab = () => pollutionCauses[activeTab] || [];
   const [isOpen, setIsOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("weather");
   const [isMinimized, setIsMinimized] = useState(false);
 
-  // Safe defaults if delhiStats hasn't loaded yet
+  const getCausesForTab = () => pollutionCauses[activeTab] || [];
+
+  const resetSliders = () => {
+    const currentCauses = getCausesForTab();
+    currentCauses.forEach(cause => {
+      updateCause(cause.id, 1.0);
+    });
+  };
+
   const stats = delhiStats || { 
       air: 0, water: 0, soil: 0,
       avgPM25: 0, avgPM10: 0,
@@ -24,13 +31,37 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses, delhiStats 
 
   const weatherData = { temp: "24°C", humidity: "45%", wind: "12 km/h NW", precip: "10%", uv: "4 Low" };
 
-  if (!isOpen) {
-    return (
-      <button className="cyber-trigger" onClick={() => setIsOpen(true)}>
-        OPEN_SENSORS
-      </button>
-    );
-  }
+  // Reusable Component for the Slider Section
+  const SimulationSection = ({ title }) => (
+    <div className="sim-section">
+      <div className="sim-header">
+        <div className="sim-title">{title}</div>
+        <button className="reset-icon-btn" onClick={resetSliders} title="Reset to Baseline">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M23 4v6h-6"></path>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+        </button>
+      </div>
+
+      {getCausesForTab().map(cause => (
+        <div key={cause.id} className="sim-control">
+          <div className="sim-row">
+            <span>{cause.label}</span>
+            <span className="sim-val">{causeValues[cause.id].toFixed(1)}x</span>
+          </div>
+          <input
+            type="range" min="0.5" max="3" step="0.1"
+            value={causeValues[cause.id]}
+            onChange={e => updateCause(cause.id, e.target.value)}
+            className="sim-range"
+          />
+        </div>
+      ))}
+    </div>
+  );
+
+  if (!isOpen) return <button className="cyber-trigger" onClick={() => setIsOpen(true)}>OPEN_SENSORS</button>;
 
   return (
     <div className={`cyber-frame glow-${activeTab} ${isMinimized ? 'minimized-frame' : ''}`}>
@@ -44,9 +75,7 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses, delhiStats 
       </header>
 
       {isMinimized && (
-        <div className={`collapsed-chip glow-${activeTab}`}>
-          DELHI • {weatherData.temp}
-        </div>
+        <div className={`collapsed-chip glow-${activeTab}`}>DELHI • {weatherData.temp}</div>
       )}
 
       <nav className="cyber-nav">
@@ -61,7 +90,7 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses, delhiStats 
         ))}
       </nav>
 
-      <div className={`cyber-content ${isMinimized ? "minimized" : ""}`} style={{ display: isMinimized ? "none" : "block" }}>
+      <div className="cyber-content" style={{ display: isMinimized ? "none" : "block" }}>
         <main className="cyber-body">
 
           {/* WEATHER TAB */}
@@ -89,34 +118,11 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses, delhiStats 
                 <div className="status-tag">{getStatus(stats.air, 'air')}</div>
               </div>
               <div className="detail-grid">
-                {/* 🔥 REAL DATA TILES */}
                 <div className="data-tile tile-air"><label>PM2.5 AVG</label><span>{stats.avgPM25} µg</span></div>
                 <div className="data-tile tile-air"><label>PM10 AVG</label><span>{stats.avgPM10} µg</span></div>
               </div>
               <div className="sim-divider" />
-
-                <div className="sim-section">
-                    <div className="sim-title">POLLUTANT IMPACT (SIM)</div>
-                    {getCausesForTab().map(cause => (
-                    <div key={cause.id} className="sim-control">
-                        <div className="sim-row">
-                        <span>{cause.label}</span>
-                        <span className="sim-val">
-                            {causeValues[cause.id].toFixed(1)}x
-                        </span>
-                        </div>
-                        <input
-                        type="range"
-                        min="0.5"
-                        max="3"
-                        step="0.1"
-                        value={causeValues[cause.id]}
-                        onChange={e => updateCause(cause.id, e.target.value)}
-                        className="sim-range"
-                        />
-                    </div>
-                    ))}
-                </div>
+              <SimulationSection title="POLLUTANT IMPACT (SIM)" />
             </>
           )}
 
@@ -129,34 +135,11 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses, delhiStats 
                 <div className="status-tag" style={{fontSize: '10px'}}>{getStatus(stats.water, 'water')}</div>
               </div>
               <div className="detail-grid">
-                {/* 🔥 REAL DATA TILES */}
                 <div className="data-tile tile-water"><label>TDS AVG</label><span>{stats.avgTDS}</span></div>
                 <div className="data-tile tile-water"><label>NITRATE</label><span>{stats.avgNitrate}</span></div>
               </div>
               <div className="sim-divider" />
-
-                <div className="sim-section">
-                    <div className="sim-title">CONTAMINANTS (SIM)</div>
-                    {getCausesForTab().map(cause => (
-                    <div key={cause.id} className="sim-control">
-                        <div className="sim-row">
-                        <span>{cause.label}</span>
-                        <span className="sim-val">
-                            {causeValues[cause.id].toFixed(1)}x
-                        </span>
-                        </div>
-                        <input
-                        type="range"
-                        min="0.5"
-                        max="3"
-                        step="0.1"
-                        value={causeValues[cause.id]}
-                        onChange={e => updateCause(cause.id, e.target.value)}
-                        className="sim-range"
-                        />
-                    </div>
-                    ))}
-                </div>
+              <SimulationSection title="CONTAMINANTS (SIM)" />
             </>
           )}
 
@@ -169,34 +152,11 @@ const DelhiDashboard = ({ causeValues, updateCause, pollutionCauses, delhiStats 
                 <div className="status-tag" style={{fontSize: '10px'}}>{getStatus(stats.soil, 'soil')}</div>
               </div>
               <div className="detail-grid">
-                {/* 🔥 REAL DATA TILES */}
                 <div className="data-tile tile-land"><label>MOISTURE</label><span>{stats.avgMoisture}%</span></div>
                 <div className="data-tile tile-land"><label>SALINITY</label><span>{stats.avgTDS > 1000 ? "HIGH" : "MOD"}</span></div>
               </div>
               <div className="sim-divider" />
-
-                <div className="sim-section">
-                    <div className="sim-title">LAND FACTORS (SIM)</div>
-                    {getCausesForTab().map(cause => (
-                    <div key={cause.id} className="sim-control">
-                        <div className="sim-row">
-                        <span>{cause.label}</span>
-                        <span className="sim-val">
-                            {causeValues[cause.id].toFixed(1)}x
-                        </span>
-                        </div>
-                        <input
-                        type="range"
-                        min="0.5"
-                        max="3"
-                        step="0.1"
-                        value={causeValues[cause.id]}
-                        onChange={e => updateCause(cause.id, e.target.value)}
-                        className="sim-range"
-                        />
-                    </div>
-                    ))}
-                </div>
+              <SimulationSection title="LAND FACTORS (SIM)" />
             </>
           )}
 
