@@ -31,7 +31,12 @@ baselineCache['#'] = { baseStats: { "air": 0, "water": 0, "soil": 0 } };
 const GENERATE_BASELINE_DATA = async (id) => {
   if (baselineCache[id]) return baselineCache[id];
   try {
-    const res = await fetch(`http://localhost:5005/api/ward/${encodeURIComponent(id)}`);
+    const normalizeWard = (s) =>
+  s?.toString().trim().replace(/\s+/g, " ");
+
+
+  
+    const res = await fetch(`https://delhivision.onrender.com/api/ward/${encodeURIComponent(normalizeWard(id))}`);
     const data = await res.json();
     baselineCache[id] = data; 
     return data;

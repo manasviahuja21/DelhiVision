@@ -113,7 +113,7 @@ const Popup = ({ wardProps, onClose }) => {
     if (!phoneNumber || phoneNumber.length < 10) return;
     setSmsStatus("sending");
     try {
-      const response = await fetch(`http://localhost:5005/api/ward/${id}/sms`, {
+      const response = await fetch(`https://delhivision.onrender.com/api/ward/${id}/sms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: phoneNumber, wardId: id })

@@ -34,7 +34,7 @@ const DelhiDashboard = ({ causeValues: initialValues, pollutionCauses, delhiStat
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        const res = await fetch('http://localhost:5005/api/weather');
+        const res = await fetch('https://delhivision.onrender.com/api/weather');
         const data = await res.json();
         setWeatherData(data);
       } catch (err) {
