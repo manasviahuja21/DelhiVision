@@ -4,7 +4,7 @@ const WardsRanking = ({ mapData, currentFactors, onClose }) => {
   const [activeTab, setActiveTab] = useState('overall');
   const [isAscending, setIsAscending] = useState(true); 
   const [searchQuery, setSearchQuery] = useState('');
-
+  console.log(currentFactors);
   const tabColors = {
     overall: { active: '#1e293b', text: '#ffffff' },
     air: { active: '#f59e0b', text: '#ffffff' },
@@ -19,7 +19,7 @@ const WardsRanking = ({ mapData, currentFactors, onClose }) => {
       .filter(f => f.properties.id && f.properties.id !== '#' && f.properties.type !== 'water')
       .map(f => {
         const simAir = Math.round((f.properties.baseStats?.air || 0) * currentFactors.air);
-        const simWater = Math.round((f.properties.baseStats?.water || 0) * currentFactors.water);
+        const simWater = Math.round((f.properties.baseStats?.water || 0) *(currentFactors?.water || 1));
         const simSoil = Math.round((f.properties.baseStats?.soil || 0) * currentFactors.soil);
         
         return {

@@ -5,6 +5,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./Popup.css";
 
+const DELHI_BOUNDS = [[28.20, 76.60], [29.10, 77.80]];
+
 /* ---------------- RECENTER MAP ---------------- */
 const RecenterMap = ({ feature }) => {
   const map = useMap();
@@ -179,8 +181,8 @@ const Popup = ({ wardProps, onClose }) => {
               <circle cx="64" cy="64" r="56" stroke="#d97706" strokeWidth="12" fill="transparent" strokeDasharray={`${moisture * 3.5} 360`} strokeLinecap="round" />
             </svg>
             <div className="absolute flex flex-col items-center">
-              <span className="text-3xl font-black text-amber-700">{moisture}%</span>
-              <span className="text-[10px] uppercase font-bold text-amber-600">Moisture</span>
+              <span className="text-3xl font-black text-amber-700">{Math.trunc(moisture)}</span>
+              <span className="text-[10px] uppercase font-bold text-amber-600">Soil Moisture at 15cm</span>
             </div>
          </div>
          <p className="text-xs text-center text-slate-500 mt-4 px-4">
@@ -228,7 +230,7 @@ const Popup = ({ wardProps, onClose }) => {
             {/* MAP CARD */}
             <div className={`p-4 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-xl shadow-lg relative flex flex-col h-[450px]`}>
                <div className="flex-1 rounded-2xl overflow-hidden relative z-0">
-                  <MapContainer center={[28.61, 77.2]} zoom={13} className="w-full h-full">
+                  <MapContainer center={[28.61, 77.2]} maxBoundsViscosity={1.0}  minZoom={10} maxBounds={DELHI_BOUNDS} zoom={13} className="w-full h-full">
                     <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
                     <GeoJSON data={feature} style={{ color: "#333", weight: 2, fillOpacity: 0.2 }} />
                     <RecenterMap feature={feature} />
@@ -257,7 +259,7 @@ const Popup = ({ wardProps, onClose }) => {
                   {sourceContent}
                </div>
 
-               {/* GOVT ACTIONS CARD */}
+               {/* GOVT ACTIONS CARD - UPDATED: REMOVED TOGGLES */}
                <div className={`p-8 rounded-3xl border ${getCardBorder(backendKey)} bg-white shadow-sm overflow-y-auto h-[450px] custom-scrollbar`}>
                   <h3 className="font-extrabold uppercase mb-2 text-slate-900 text-sm tracking-wide">Govt. Actions</h3>
                   <div className="w-10 h-1 bg-slate-200 mb-4 rounded-full"></div>
@@ -265,12 +267,9 @@ const Popup = ({ wardProps, onClose }) => {
                     {data.governmentActions[backendKey]?.length > 0 ? (
                       data.governmentActions[backendKey].map((action, i) => (
                         <div key={i} className="flex gap-3 items-start bg-slate-50 p-3 rounded-lg">
-                          <CheckCircle2 size={18} className={action.implemented ? "text-emerald-500 mt-1" : "text-slate-300 mt-1"} />
+                          <CheckCircle2 size={18} className="text-slate-400 mt-1 shrink-0" />
                           <div>
                             <p className="text-sm font-semibold text-slate-700">{action.action}</p>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${action.implemented ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>
-                              {action.implemented ? 'IMPLEMENTED' : 'PLANNED'}
-                            </span>
                           </div>
                         </div>
                       ))
@@ -318,7 +317,7 @@ const Popup = ({ wardProps, onClose }) => {
             </div>
           </div>
 
-          {/* 🚨 NEW SEPARATE SMS SECTION 🚨 */}
+          {/* SMS SECTION */}
           <div className="bg-gradient-to-r from-red-50 to-white border-2 border-red-100 rounded-[2rem] p-10 flex flex-col md:flex-row items-center gap-8 shadow-inner">
              <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">

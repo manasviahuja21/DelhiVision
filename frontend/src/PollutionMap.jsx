@@ -123,11 +123,11 @@ const PollutionMap = () => {
             const id = props.Ward_Name || props.name || '#';
             const fullWardData = await GENERATE_BASELINE_DATA(id);
             
-            const finalBaseStats = {
-              air: fullWardData.airPollutants?.aqi || 0,
-              water: fullWardData.waterData?.wqi || 0,
-              soil: fullWardData.soilData?.sqi || 0
-            };
+            const finalBaseStats = fullWardData.baseStats || {
+  air: fullWardData.airPollutants?.aqi || 0,
+  water: fullWardData.waterData?.wqi || 0,
+  soil: fullWardData.soilData?.sqi || 0
+};
 
             // --- STRICT AGGREGATION LOGIC (NO NaNs) ---
             if (id !== '#') {
@@ -220,7 +220,7 @@ const PollutionMap = () => {
     if (feature.properties.type === 'water') return { weight: 0, opacity: 0, fillOpacity: 0 };
     const val = getSimulatedValue(feature.properties.baseStats.soil, currentFactors.soil);
     let color = '#d87a2c'; 
-    if (val > 40) color = '#3E2723'; else if (val > 20) color = '#9c3c19'; else if (val > 10) color = '#5D4037'; 
+    if (val > 70) color = '#3E2723'; else if (val > 60) color = '#9c3c19'; else if (val > 40) color = '#ce9786'; 
     return { fillColor: color, fillOpacity: 0.6, weight: 0, opacity: 0 };
   };
 
