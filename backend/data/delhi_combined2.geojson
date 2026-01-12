@@ -35710,7 +35710,7 @@
     {
       "type": "Feature",
       "properties": {
-        "Ward_Name": "MANGOLPURI  WEST",
+        "Ward_Name": "MANGOLPURI WEST",
         "Ward_No": "48"
       },
       "geometry": {
@@ -35812,7 +35812,7 @@
     {
       "type": "Feature",
       "properties": {
-        "Ward_Name": "MANGOLPURI  EAST",
+        "Ward_Name": "MANGOLPURI EAST",
         "Ward_No": "46"
       },
       "geometry": {
@@ -36572,7 +36572,7 @@
     {
       "type": "Feature",
       "properties": {
-        "Ward_Name": "SULTANPURI  SOUTH",
+        "Ward_Name": "SULTANPURI SOUTH",
         "Ward_No": "40"
       },
       "geometry": {
@@ -36698,7 +36698,7 @@
     {
       "type": "Feature",
       "properties": {
-        "Ward_Name": "SULTANPURI  EAST",
+        "Ward_Name": "SULTANPURI EAST",
         "Ward_No": "37"
       },
       "geometry": {
@@ -39240,7 +39240,7 @@
     {
       "type": "Feature",
       "properties": {
-        "Ward_Name": "KRISHNA  NAGAR",
+        "Ward_Name": "KRISHNA NAGAR",
         "Ward_No": "229"
       },
       "geometry": {
@@ -52156,7 +52156,7 @@
     {
       "type": "Feature",
       "properties": {
-        "Ward_Name": "ADARASH  NAGAR",
+        "Ward_Name": "ADARASH NAGAR",
         "Ward_No": "14"
       },
       "geometry": {
@@ -58736,7 +58736,7 @@
     {
       "type": "Feature",
       "properties": {
-        "Ward_Name": "MANGOL PURI  NORTH",
+        "Ward_Name": "MANGOL PURI NORTH",
         "Ward_No": "38"
       },
       "geometry": {
