@@ -309,7 +309,12 @@ const PollutionMap = () => {
           style={{ height: "100%", width: "100%", background: '#f4f6f8' }}
         >
           <MapLayerManager />
-          <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution='&copy; CARTO' />
+          
+<TileLayer
+  url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+/>
+
           <ZoomControl position="bottomright" />
           {!loading && mapData && (
             <>
