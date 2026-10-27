@@ -13,7 +13,7 @@ require("dotenv").config();
 const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
-  console.error("API_KEY is not set in environment variables!");
+  console.error("[CONFIG] API_KEY is not set in environment variables!");
 }
 
 const BASE_URL =
@@ -25,15 +25,119 @@ const SOIL_BASE_URL =
 const CACHE_TTL = 60 * 60 * 1000;
 const SOIL_CACHE_TTL = 24 * 60 * 60 * 1000;
 
+const REQUEST_TIMEOUT_MS = 15000;
+const MAX_RETRIES = 2;
+
 // Normalize names for case-insensitive lookup.
 function normalizeName(value) {
   return String(value ?? "").trim().toUpperCase();
 }
 
-/**
- * Fetch CPCB data for a ward.
- * ward -> station -> API/cache -> AQI -> return
- */
+// Print useful network diagnostics without exposing the request URL or API key.
+function logFetchError(label, error, attempt) {
+  console.error(`[${label}] Request failed on attempt ${attempt}`);
+  console.error(`[${label}] Message:`, error?.message);
+  console.error(`[${label}] Cause message:`, error?.cause?.message);
+  console.error(`[${label}] Cause code:`, error?.cause?.code);
+  console.error(`[${label}] Cause name:`, error?.cause?.name);
+  console.error(`[${label}] Error code:`, error?.code);
+
+  if (error?.cause) {
+    console.error(`[${label}] Underlying cause:`, error.cause);
+  }
+}
+
+// Fetch with a timeout and a small number of retries.
+// Retries network failures, HTTP 429, and HTTP 5xx responses.
+async function fetchWithRetry(url, label) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+    try {
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+      });
+
+      if (
+        (response.status === 429 || response.status >= 500) &&
+        attempt <= MAX_RETRIES
+      ) {
+        console.warn(
+          `[${label}] HTTP ${response.status}; retrying (${attempt}/${MAX_RETRIES})`
+        );
+
+        await response.body?.cancel();
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, 500 * attempt)
+        );
+
+        continue;
+      }
+
+      return response;
+    } catch (error) {
+      lastError = error;
+      logFetchError(label, error, attempt);
+
+      if (attempt > MAX_RETRIES) {
+        throw error;
+      }
+
+      console.warn(
+        `[${label}] Retrying after network failure (${attempt}/${MAX_RETRIES})`
+      );
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, 500 * attempt)
+      );
+    }
+  }
+
+  throw lastError || new Error(`${label} request failed`);
+}
+
+// Run once when this module loads to check outbound connectivity from Render.
+// These tests do not use or expose your API key.
+async function testExternalAPIConnectivity() {
+  console.log("[NETWORK TEST] Starting one-time connectivity checks");
+
+  const urls = [
+    { label: "DATA.GOV.IN", url: "https://api.data.gov.in/" },
+    { label: "GOOGLE", url: "https://www.google.com/" }
+  ];
+
+  for (const item of urls) {
+    try {
+      console.log(`[NETWORK TEST] Testing ${item.label}`);
+
+      const response = await fetch(item.url, {
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log(
+        `[NETWORK TEST] ${item.label} returned HTTP ${response.status}`
+      );
+
+      await response.body?.cancel();
+    } catch (error) {
+      console.error(`[NETWORK TEST] ${item.label} FAILED`);
+      console.error("[NETWORK TEST] Message:", error?.message);
+      console.error("[NETWORK TEST] Cause message:", error?.cause?.message);
+      console.error("[NETWORK TEST] Cause code:", error?.cause?.code);
+      console.error("[NETWORK TEST] Cause name:", error?.cause?.name);
+
+      if (error?.cause) {
+        console.error("[NETWORK TEST] Underlying cause:", error.cause);
+      }
+    }
+  }
+
+  console.log("[NETWORK TEST] Connectivity checks finished");
+}
+
+// ---------- CPCB AIR QUALITY ----------
+
 async function getWardCPCBData(wardId) {
   console.log("[CPCB] Function called:", wardId);
 
@@ -47,7 +151,7 @@ async function getWardCPCBData(wardId) {
     throw new Error("API_KEY is not set in environment variables");
   }
 
-  // 1. Ward -> monitoring station
+  // Ward -> monitoring station
   let station = null;
 
   for (const key of Object.keys(wardStationMap)) {
@@ -66,7 +170,7 @@ async function getWardCPCBData(wardId) {
   console.log("[CPCB] Normalized ward:", normalizedWard);
   console.log("[CPCB] Station:", station);
 
-  // 2. Check station-level cache
+  // Station-level cache
   const cached = cpcbCache[station];
 
   if (
@@ -86,7 +190,6 @@ async function getWardCPCBData(wardId) {
     };
   }
 
-  // 3. Construct URL BEFORE logging or fetching it.
   const params = new URLSearchParams({
     format: "json",
     "api-key": API_KEY,
@@ -96,12 +199,10 @@ async function getWardCPCBData(wardId) {
 
   const url = `${BASE_URL}?${params.toString()}`;
 
-  // Never log the API key.
-  console.log("[CPCB] Requesting station:", station);
-
   try {
-    // 4. Fetch data
-    const response = await fetch(url);
+    console.log("[CPCB] Requesting station:", station);
+
+    const response = await fetchWithRetry(url, "CPCB");
 
     console.log("[CPCB] HTTP status:", response.status);
 
@@ -113,7 +214,6 @@ async function getWardCPCBData(wardId) {
       throw new Error(`CPCB API failed with HTTP ${response.status}`);
     }
 
-    // 5. Parse response
     const data = await response.json();
 
     console.log("[CPCB] Response keys:", Object.keys(data));
@@ -123,12 +223,10 @@ async function getWardCPCBData(wardId) {
 
     if (records.length === 0) {
       console.warn("[CPCB] API returned zero records for:", station);
-      console.log("[CPCB] API response:", data);
-
       throw new Error("No CPCB data found");
     }
 
-    // 6. Keep the latest encountered record per pollutant.
+    // Keep the latest encountered record per pollutant.
     const pollutantMap = {};
 
     for (const record of records) {
@@ -143,10 +241,8 @@ async function getWardCPCBData(wardId) {
 
     console.log("[CPCB] Cleaned pollutants:", cleaned);
 
-    // 7. Calculate AQI
     const aqiInfo = calculateAQI(cleaned);
 
-    // 8. Save cache
     cpcbCache[station] = {
       timestamp: Date.now(),
       data: cleaned,
@@ -154,7 +250,6 @@ async function getWardCPCBData(wardId) {
       dominantPollutant: aqiInfo.dominantPollutant
     };
 
-    // 9. Return
     return {
       ward: wardId,
       station,
@@ -195,7 +290,7 @@ async function getWardWaterWQI(wardName) {
     };
   }
 
-  // Station -> stored water data (case-insensitive)
+  // Station -> stored water data
   let stationData = null;
   const targetStation = normalizeName(station);
 
@@ -218,7 +313,6 @@ async function getWardWaterWQI(wardName) {
   }
 
   const { ph, Nitrate, TDS } = stationData;
-
   const wqi = calculateWQI({ ph, Nitrate, TDS });
 
   return {
@@ -242,7 +336,7 @@ async function getWardSoilData(wardName) {
     throw new Error("API_KEY is not set in environment variables");
   }
 
-  // 1. Ward -> district
+  // Ward -> district
   let district = null;
 
   for (const key of Object.keys(wardToDistrict)) {
@@ -261,7 +355,7 @@ async function getWardSoilData(wardName) {
     };
   }
 
-  // 2. District-level soil cache
+  // District-level soil cache
   const cachedDistrict = cpcbCache[district];
 
   if (
@@ -277,7 +371,6 @@ async function getWardSoilData(wardName) {
     };
   }
 
-  // 3. Build soil API request
   const params = new URLSearchParams({
     format: "json",
     "api-key": API_KEY,
@@ -291,7 +384,7 @@ async function getWardSoilData(wardName) {
   try {
     console.log("[SOIL] Requesting district:", district);
 
-    const response = await fetch(url);
+    const response = await fetchWithRetry(url, "SOIL");
 
     console.log("[SOIL] HTTP status:", response.status);
 
@@ -318,15 +411,13 @@ async function getWardSoilData(wardName) {
       };
     }
 
-    // 4. Clean soil measurement
     const moisture = Number(record.Avg_smlvl_at15cm);
 
     if (!Number.isFinite(moisture)) {
       throw new Error("Invalid soil moisture value returned by API");
     }
 
-    // Water values are fetched independently.
-    // Do not rely on mutable global variables from another request.
+    // Retrieve water measurements independently; no mutable global values.
     const waterResult = await getWardWaterWQI(wardName);
 
     const sqi = calculateSQI({
@@ -344,7 +435,7 @@ async function getWardSoilData(wardName) {
       timestamp: Date.now()
     };
 
-    // 5. Save district-level soil cache
+    // Save district-level soil cache.
     if (!cpcbCache[district]) {
       cpcbCache[district] = {};
     }
@@ -363,6 +454,11 @@ async function getWardSoilData(wardName) {
     throw error;
   }
 }
+
+// Run diagnostics once when this module is loaded.
+testExternalAPIConnectivity().catch((error) => {
+  console.error("[NETWORK TEST] Unexpected diagnostic error:", error.message);
+});
 
 module.exports = {
   getWardCPCBData,
