@@ -7,7 +7,7 @@ const wardWaterData = require("../data/ward_water_data.json");
 const wardToWaterStation = require("../data/wardname_to_stnWater.json");
 const { calculateWQI } = require("./wqihelper");
 require("dotenv").config();
-configDotenv();
+
 
 // Securely load the API key from environment variables
 const API_KEY = process.env.API_KEY;
