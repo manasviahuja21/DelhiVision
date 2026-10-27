@@ -231,7 +231,12 @@ const Popup = ({ wardProps, onClose }) => {
             <div className={`p-4 rounded-3xl border ${getCardBorder(backendKey)} bg-white/60 backdrop-blur-xl shadow-lg relative flex flex-col h-[450px]`}>
                <div className="flex-1 rounded-2xl overflow-hidden relative z-0">
                   <MapContainer center={[28.61, 77.2]} maxBoundsViscosity={1.0}  minZoom={10} maxBounds={DELHI_BOUNDS} zoom={13} className="w-full h-full">
-                    <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+                    
+<TileLayer
+  url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+/>
+
                     <GeoJSON data={feature} style={{ color: "#333", weight: 2, fillOpacity: 0.2 }} />
                     <RecenterMap feature={feature} />
                   </MapContainer>
