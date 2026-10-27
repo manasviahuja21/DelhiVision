@@ -68,7 +68,11 @@ console.log("URL:", url.replace(API_KEY, "[REDACTED]"));
     `&filters[station]=${encodeURIComponent(station)}`;
 
   const response = await fetch(url);
-  if (!response.ok) throw new Error("CPCB API failed");
+  if (!response.ok) 
+  {
+    console.log("KUCH AAYA NAHI API SE");
+    throw new Error("CPCB API failed");
+  }
 
   const data = await response.json();
   const records = data.records || [];
