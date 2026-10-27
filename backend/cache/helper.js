@@ -73,10 +73,8 @@ console.log("URL:", url.replace(API_KEY, "[REDACTED]"));
   const data = await response.json();
   const records = data.records || [];
   if (records.length === 0) throw new Error("No CPCB data found");
-  const data = await response.json();
-console.log("CPCB full response:", data);
-const records = data.records || [];
-console.log("CPCB records:", records);
+  console.log("CPCB full response:", data);
+  console.log("CPCB records:", records);
   
   // 5️⃣ cleanup (latest value per pollutant)
   const pollutantMap = {};
