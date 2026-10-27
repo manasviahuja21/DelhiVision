@@ -11,10 +11,11 @@ require("dotenv").config();
 
 // Securely load the API key from environment variables
 const API_KEY = process.env.API_KEY;
+
 if (!API_KEY) {
   console.error("API_KEY is not set in environment variables!");
 }
-
+console.log("🔍 API Key Check:", API_KEY ? `Loaded successfully (Length: ${API_KEY.length})` : "❌ FAILED: API_KEY is undefined!");
 const BASE_URL = "https://api.data.gov.in/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69";
 
 const SOIL_BASE_URL = "https://api.data.gov.in/resource/4554a3c8-74e3-4f93-8727-8fd92161e345";
