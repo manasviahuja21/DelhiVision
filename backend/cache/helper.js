@@ -43,7 +43,10 @@ async function getWardCPCBData(wardId) {
   }
 
   if (!station) throw new Error("Ward not mapped to station");
-
+  console.log("WARD:", wardId);
+console.log("NORMALIZED:", normalizedWard);
+console.log("STATION:", station);
+console.log("URL:", url.replace(API_KEY, "[REDACTED]"));
   // 3️⃣ cache check (station level)
   const cached = cpcbCache[station];
   if (cached && Date.now() - cached.timestamp < 60 * 60 * 1000) {
