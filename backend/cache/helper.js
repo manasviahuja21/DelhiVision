@@ -6,7 +6,13 @@ const { calculateSQI } = require("./sqihelper");
 const wardWaterData = require("../data/ward_water_data.json");
 const wardToWaterStation = require("../data/wardname_to_stnWater.json");
 const { calculateWQI } = require("./wqihelper");
+configDotenv();
 
+// Securely load the API key from environment variables
+const API_KEY = process.env.API_KEY;
+if (!API_KEY) {
+  console.error("API_KEY is not set in environment variables!");
+}
 
 const BASE_URL = "https://api.data.gov.in/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69";
 
