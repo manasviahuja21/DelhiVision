@@ -7,7 +7,6 @@ const wardWaterData = require("../data/ward_water_data.json");
 const wardToWaterStation = require("../data/wardname_to_stnWater.json");
 const { calculateWQI } = require("./wqihelper");
 
-const API_KEY = "579b464db66ec23bdd00000173dcce17464440825a96b0d25fad51fc";
 
 const BASE_URL = "https://api.data.gov.in/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69";
 
