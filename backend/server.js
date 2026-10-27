@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -246,7 +248,7 @@ app.get('/api/weather', async (req, res) => {
   const weather = await getDelhiWeather();
   res.json(weather);
 });
-const PORT = 5005;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+const PORT = process.env.PORT || 5005;
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });
